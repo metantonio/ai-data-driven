@@ -1,4 +1,6 @@
-# Verification Walkthrough
+# QLX mini-Orion ML
+
+QLX mini-Orion ML is a demo web application that uses machine learning to analyze and predict data from a database.
 
 ## Prerequisites
 - Python 3.9+
