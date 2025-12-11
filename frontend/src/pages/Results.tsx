@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { adaptCode, executeCode, generateInsights, SchemaAnalysis, ExecutionReport } from '../api/client';
 import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css'; // Import highlight.js styles
 
 export default function Results() {
     const { state } = useLocation();
@@ -149,7 +152,9 @@ export default function Results() {
                             <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 text-slate-200 leading-relaxed shadow-lg">
                                 <div className="prose prose-invert max-w-none">
                                     {insights ? (
-                                        <div className="whitespace-pre-wrap">{insights}</div>
+                                        <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                                            {insights}
+                                        </ReactMarkdown>
                                     ) : (
                                         <div className="flex items-center gap-2 text-slate-500 italic">
                                             {stage === 'insight' ? <Loader className="animate-spin h-4 w-4" /> : null}
