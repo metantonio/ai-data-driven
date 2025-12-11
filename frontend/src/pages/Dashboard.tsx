@@ -13,8 +13,18 @@ export default function Dashboard() {
         setLoading(true);
         setError(null);
         try {
-            const data = await analyzeSchema(connectionString);
-            navigate('/results', { state: { schemaAnalysis: data, connectionString } });
+            let dbString = connectionString.trim();
+            // Automatically add sqlite protocol if user just enters a filename like 'example.db'
+            if (!dbString.includes('://') && (dbString.endsWith('.db') || dbString.endsWith('.sqlite'))) {
+                // Assume it's a relative path to the backend, so we might need ../ prefix if running from nested dir
+                // But for simplicity in UI, we just prepend sqlite:///. 
+                // The user might need to adjust relative paths.
+                // Given the walkthrough uses ../example.db, let's just ensure protocol.
+                dbString = `sqlite:///${dbString}`;
+            }
+
+            const data = await analyzeSchema(dbString);
+            navigate('/results', { state: { schemaAnalysis: data, connectionString: dbString } });
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to analyze schema');
         } finally {
@@ -62,8 +72,8 @@ export default function Dashboard() {
                             onClick={handleAnalyze}
                             disabled={loading || !connectionString}
                             className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${loading || !connectionString
-                                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 hover:shadow-cyan-500/40 transform hover:-translate-y-0.5'
+                                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 hover:shadow-cyan-500/40 transform hover:-translate-y-0.5'
                                 }`}
                         >
                             {loading ? (
