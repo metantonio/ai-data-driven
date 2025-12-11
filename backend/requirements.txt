@@ -7,3 +7,4 @@ alembic
 asyncpg
 python-multipart
 requests
+python-dotenv

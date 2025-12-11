@@ -1,15 +1,71 @@
+import os
+import requests
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class LLMService:
-    def __init__(self, api_key: str = "mock"):
-        self.api_key = api_key
+    def __init__(self):
+        self.provider = os.getenv("LLM_PROVIDER", "mock").lower()
+        self.api_url = os.getenv("LLM_API_URL", "http://localhost:11434/api/generate")
+        self.model = os.getenv("LLM_MODEL", "mistral")
+        self.api_key = os.getenv("LLM_API_KEY", "mock")
 
     def generate_response(self, prompt: str) -> str:
         """
-        Mock LLM response generator. 
-        In a real scenario, this would call OpenAI/Gemini API.
+        Generates a response using the configured LLM provider.
         """
-        print(f"[LLM Prompt]: {prompt[:100]}...")
+        print(f"[LLM Service]: Using provider '{self.provider}' for prompt: {prompt[:50]}...")
+
+        if self.provider == "mock":
+            return self._mock_response(prompt)
         
-        # Simple heuristic response for demonstration
+        elif self.provider == "ollama":
+            return self._ollama_response(prompt)
+            
+        elif self.provider in ["vllm", "openai"]:
+            return self._openai_compatible_response(prompt)
+            
+        else:
+            return f"Error: Unknown LLM provider '{self.provider}'"
+
+    def _ollama_response(self, prompt: str) -> str:
+        try:
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False
+            }
+            response = requests.post(self.api_url, json=payload, timeout=120)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("response", "")
+        except Exception as e:
+            print(f"Error calling Ollama: {e}")
+            return f"Error calling Ollama: {e}"
+
+    def _openai_compatible_response(self, prompt: str) -> str:
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}"
+            }
+            payload = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7
+            }
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=120)
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"Error calling vLLM/OpenAI: {e}")
+            return f"Error calling vLLM/OpenAI: {e}"
+
+    def _mock_response(self, prompt: str) -> str:
+        # Heuristic response for demonstration
         if "analyze the following database schema" in prompt.lower():
             return "The database contains user data and activity logs. The 'users' table is the central entity."
         
