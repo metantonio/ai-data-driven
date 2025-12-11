@@ -43,7 +43,7 @@ class LLMService:
             return data.get("response", "")
         except Exception as e:
             print(f"Error calling Ollama: {e}")
-            return f"Error calling Ollama: {e}"
+            raise RuntimeError(f"Failed to generate response from Ollama: {e}")
 
     def _openai_compatible_response(self, prompt: str) -> str:
         try:
@@ -62,7 +62,7 @@ class LLMService:
             return data["choices"][0]["message"]["content"]
         except Exception as e:
             print(f"Error calling vLLM/OpenAI: {e}")
-            return f"Error calling vLLM/OpenAI: {e}"
+            raise RuntimeError(f"Failed to generate response from vLLM/OpenAI: {e}")
 
     def _mock_response(self, prompt: str) -> str:
         # Heuristic response for demonstration
