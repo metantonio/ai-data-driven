@@ -40,5 +40,16 @@ npm run dev
 - **Connection Error**: Ensure the path to `example.db` is correct relative to the running backend process.
 - **Missing Dependencies**: Check [requirements.txt](file:///c:/Repositorios/ai-data-driven/backend/requirements.txt) for `scikit-learn` (it might be missing).
 
-> [!WARNING]
 > `scikit-learn` was not explicitly added to [backend/requirements.txt](file:///c:/Repositorios/ai-data-driven/backend/requirements.txt) but is needed by the *generated* code. The execution environment needs it.
+
+## Example Database (`example.db`)
+A sample SQLite database is created in the root directory for testing.
+
+**Table: `houses`**
+| Column | Type | Description |
+|:---|:---|:---|
+| `sqft` | INTEGER | Square footage of the property |
+| `bedrooms` | INTEGER | Number of bedrooms |
+| `price` | REAL | Calculated price (Target Variable) |
+
+Use connection string: `sqlite:///../example.db` (if running from `backend/` dir) or auto-resolved path in Dashboard.
