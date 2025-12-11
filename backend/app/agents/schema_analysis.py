@@ -25,5 +25,6 @@ class SchemaAnalysisAgent:
         
         return {
             "raw_schema": schema_summary,
-            "analysis": analysis
+            "analysis": analysis,
+            "connection_string": connection_string
         }

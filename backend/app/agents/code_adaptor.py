@@ -17,6 +17,8 @@ class CodeAdaptationAgent:
                 template_code = f.read()
 
         # 2. Prompt LLM to fill placeholders
+        connection_string = schema_analysis.get('connection_string', 'sqlite:///../example.db')
+        
         prompt = f"""
         You are a Machine Learning Engineer. Adapt the following Python ML template to work with the described dataset.
         
@@ -26,11 +28,14 @@ class CodeAdaptationAgent:
         Raw Schema:
         {schema_analysis['raw_schema']}
         
+        Connection String:
+        "{connection_string}"
+        
         Template Code:
         {template_code}
         
         Tasks:
-        1. Implement 'load_data' to connect to the DB and fetch data using SQL (use sqlalchemy or pandas).
+        1. Implement 'load_data' to connect to the DB using the provided Connection String exactly. Use sqlalchemy.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types.
         3. Select the most likely target column from the schema for 'train_model'.
         

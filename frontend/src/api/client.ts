@@ -12,6 +12,7 @@ export const api = axios.create({
 export interface SchemaAnalysis {
     raw_schema: any;
     analysis: string;
+    connection_string?: string;
 }
 
 export interface ExecutionReport {
