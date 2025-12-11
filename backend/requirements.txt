@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+pandas
+sqlalchemy
+alembic
+asyncpg
+python-multipart
+requests
