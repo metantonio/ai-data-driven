@@ -39,4 +39,14 @@ class CodeAdaptationAgent:
         
         adapted_code = self.llm.generate_response(prompt)
         
-        return adapted_code
+        # Clean up the response to extract only the code
+        import re
+        # Look for ```python ... ``` or just ``` ... ```
+        code_match = re.search(r'```(?:python)?\s*(.*?)```', adapted_code, re.DOTALL)
+        if code_match:
+            return code_match.group(1).strip()
+            
+        # Fallback: if no code blocks, potentially return the whole thing 
+        # but unlikely to work if there is explanatory text. 
+        # Let's try to remove any leading/trailing whitespace at least.
+        return adapted_code.strip()
