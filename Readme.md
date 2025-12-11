@@ -2,6 +2,8 @@
 
 QLX mini-Orion ML is a demo web application that uses machine learning to analyze and predict data from a database.
 
+<img src="./portada.gif" alt="QLX mini-Orion ML">
+
 ## Prerequisites
 - Python 3.9+
 - Node.js 18+
