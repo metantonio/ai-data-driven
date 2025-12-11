@@ -10,6 +10,8 @@ Open a terminal and run the backend:
 cd backend
 # Install dependencies
 pip install -r requirements.txt
+# Set environment variables
+cp .env.example .env
 # Run server
 uvicorn app.main:app --reload
 ```
