@@ -8,3 +8,4 @@ asyncpg
 python-multipart
 requests
 python-dotenv
+scikit-learn
