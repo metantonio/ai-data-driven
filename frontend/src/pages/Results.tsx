@@ -259,7 +259,7 @@ export default function Results() {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-50 p-6 md:p-12">
-            <div className="max-w-6xl mx-auto space-y-8">
+            <div className="mx-auto space-y-8">
 
                 {/* Header */}
                 <div className="flex items-center gap-4 border-b border-slate-700/50 pb-6">
@@ -299,10 +299,10 @@ export default function Results() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-7 gap-5 items-start">
 
-                    {/* Left Column: Code & Execution Logs */}
-                    <div className="space-y-8">
+                    {/* Left Column (1/4): Code & Execution Logs */}
+                    <div className="lg:col-span-2 space-y-8">
                         {/* Code Block */}
                         <div className={`space-y-4 transition-all duration-500 ${adaptedCode ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
                             <div className="flex items-center gap-2 text-cyan-400">
@@ -320,7 +320,7 @@ export default function Results() {
                                 <Play className="h-5 w-5" />
                                 <h2 className="font-semibold text-lg">Execution Output</h2>
                             </div>
-                            <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs md:text-sm text-slate-300 overflow-x-auto h-48 custom-scrollbar">
+                            <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs md:text-sm text-slate-300 overflow-x-auto max-h-[280px] custom-scrollbar">
                                 {executionResult ? (
                                     <>
                                         <div className="text-slate-500 mb-2">$ python pipeline.py</div>
@@ -332,13 +332,13 @@ export default function Results() {
                         </div>
                     </div>
 
-                    {/* Right Column: Insights & Metrics */}
-                    <div className="space-y-8">
+                    {/* Middle Column (1/4): Metrics & Interactive Elements */}
+                    <div className="lg:col-span-2 space-y-8">
                         {/* Metrics Card */}
                         {executionResult?.report && (
                             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-6 rounded-2xl shadow-lg space-y-6">
                                 <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-700/50 pb-2">Model Metrics</h2>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     {Object.entries(executionResult.report.metrics).map(([key, value]) => (
                                         <div key={key} className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
                                             <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">{key.replace(/_/g, ' ')}</div>
@@ -366,25 +366,22 @@ export default function Results() {
                             </button>
                         )}
 
-                        {/* Interactive Prediction Form - NEW */}
+                        {/* Interactive Prediction Form */}
                         {executionResult?.report?.model_path && executionResult?.report?.features && (
                             <PredictionForm
                                 modelPath={executionResult.report.model_path}
                                 features={executionResult.report.features}
                             />
                         )}
-
                     </div>
-                </div>
 
-                {/* Centered Insights Panel - MOVED HERE */}
-                <div className={`transition-all duration-500 delay-200 mt-12 flex flex-col items-center ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
-                    <div className="w-full md:w-3/4 max-w-4xl space-y-4">
-                        <div className="flex items-center justify-center gap-2 text-yellow-400">
+                    {/* Right Column (2/4 = 1/2): Insights */}
+                    <div className={`lg:col-span-3 transition-all duration-500 delay-200 ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                        <div className="flex items-center gap-2 text-yellow-400 mb-4">
                             <FileText className="h-6 w-6" />
                             <h2 className="font-semibold text-2xl">AI-Generated Insights</h2>
                         </div>
-                        <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 text-slate-200 leading-relaxed shadow-xl backdrop-blur-sm">
+                        <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 text-slate-200 leading-relaxed shadow-xl backdrop-blur-sm max-h-[750px]" style={{ overflowY: 'auto' }}>
                             <div className="prose prose-invert prose-lg max-w-none">
                                 {insights ? (
                                     <ReactMarkdown
