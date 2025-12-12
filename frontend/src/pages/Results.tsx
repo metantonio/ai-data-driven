@@ -23,6 +23,18 @@ export default function Results() {
             navigate('/');
             return;
         }
+
+        // Check if we already have results in state (from coming back)
+        const cachedResult = location.state?.executionResult;
+        const cachedInsights = location.state?.insights;
+
+        if (cachedResult) {
+            setExecutionResult(cachedResult);
+            if (cachedInsights) setInsights(cachedInsights);
+            setStage('done');
+            return; // Skip running pipeline
+        }
+
         runPipeline();
     }, [schemaAnalysis, algorithmType]); // Added algorithmType to dependency array
 
@@ -44,6 +56,16 @@ export default function Results() {
                 const insightRes = await generateInsights(execRes.report, schemaAnalysis);
                 setInsights(insightRes.insights);
                 setStage('done');
+
+                // Persist results to history state so they survive navigation
+                navigate('.', {
+                    state: {
+                        ...location.state,
+                        executionResult: execRes,
+                        insights: insightRes.insights
+                    },
+                    replace: true
+                });
             } else {
                 setError('Execution failed to produce a structured report. Check stderr.');
                 setStage('done'); // Stop here but marked as done with error
