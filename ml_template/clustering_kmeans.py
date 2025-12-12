@@ -62,7 +62,19 @@ def main():
              best_k = 2
              score = -1.0
              
+             
         # 5. Evaluate
+        
+        # Prepare Visualization Data (PCA 2D projection if needed, or just 2 features)
+        # For simplicity in this generic agent, we'll take the first 2 features if available
+        visualization_data = []
+        if X.shape[1] >= 2:
+            viz_df = X.iloc[:, :2].copy()
+            viz_df['cluster'] = model.labels_
+            if len(viz_df) > 300:
+                viz_df = viz_df.sample(300, random_state=42)
+            visualization_data = viz_df.to_dict(orient='records')
+            
         report = {
             "metrics": {
                 "silhouette_score": float(score),
@@ -71,7 +83,8 @@ def main():
             },
             "model_type": "K-Means Clustering (Auto-Optimized)",
             "features": list(X.columns),
-            "cluster_centers": model.cluster_centers_.tolist()
+            "cluster_centers": model.cluster_centers_.tolist(),
+            "visualization_data": visualization_data
         }
         print(json.dumps(report))
 

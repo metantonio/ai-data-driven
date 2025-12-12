@@ -50,6 +50,14 @@ def main():
         mse = mean_squared_error(y_test, predictions)
         r2 = r2_score(y_test, predictions)
         
+        # Prepare Visualization Data (Sample of Actual vs Predicted)
+        # Limit to 200 points to keep JSON size manageable
+        viz_df = pd.DataFrame({'Actual': y_test, 'Predicted': predictions})
+        if len(viz_df) > 200:
+            viz_df = viz_df.sample(200, random_state=42)
+            
+        visualization_data = viz_df.to_dict(orient='records')
+        
         report = {
             "metrics": {
                 "mse": float(mse),
@@ -57,7 +65,8 @@ def main():
             },
             "model_type": "Linear Regression",
             "features": list(X.columns),
-            "target": target_col
+            "target": target_col,
+            "visualization_data": visualization_data
         }
         print(json.dumps(report))
         

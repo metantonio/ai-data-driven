@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { adaptCode, executeCode, generateInsights, SchemaAnalysis, ExecutionReport } from '../api/client';
-import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft } from 'lucide-react';
+import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css'; // Import highlight.js styles
@@ -143,6 +143,17 @@ export default function Results() {
                             </div>
                         )}
 
+                        {/* Visualization Link */}
+                        {executionResult?.report?.visualization_data && (
+                            <button
+                                onClick={() => navigate('/visualizations', { state: { report: executionResult.report, algorithmType } })}
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all"
+                            >
+                                <BarChart2 className="h-5 w-5" />
+                                View Interactive Visualizations & Data
+                            </button>
+                        )}
+
                         {/* Insights Panel */}
                         <div className={`space-y-4 transition-all duration-500 delay-200 ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
                             <div className="flex items-center gap-2 text-yellow-400">
@@ -169,6 +180,6 @@ export default function Results() {
                 </div>
 
             </div>
-        </div>
+        </div >
     );
 }

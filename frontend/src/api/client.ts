@@ -20,6 +20,7 @@ export interface ExecutionReport {
     model_type: string;
     features: string[];
     target: string;
+    visualization_data?: any[];
 }
 
 export const analyzeSchema = async (connectionString: string, algorithmType: string) => {

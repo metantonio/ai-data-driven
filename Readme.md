@@ -1,8 +1,8 @@
-# QLX mini-Orion ML
+# QLX AI Powered ML System
 
-QLX mini-Orion ML is a demo web application that uses machine learning to analyze and predict data from a database.
+QLX AI Powered ML System is a demo web application that uses machine learning to analyze and predict data from a database.
 
-<img src="./portada.gif" alt="QLX mini-Orion ML">
+<img src="./portada.gif" alt="QLX AI Powered ML System">
 
 ## Prerequisites
 - Python 3.9+
@@ -25,7 +25,7 @@ Open another terminal:
 ```bash
 cd frontend
 # Install dependencies (if not done)
-npm install
+npm install --legacy-peer-deps
 # Run dev server
 npm run dev
 ```
