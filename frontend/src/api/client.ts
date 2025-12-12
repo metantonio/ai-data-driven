@@ -41,13 +41,14 @@ export const executeCode = async (code: string, schemaAnalysis?: SchemaAnalysis)
     return response.data;
 };
 
-export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpdate: (data: any) => void) => {
+export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpdate: (data: any) => void, signal?: AbortSignal) => {
     const response = await fetch(`${API_BASE_URL}/execute-code`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ code, schema_analysis: schemaAnalysis }),
+        signal
     });
 
     if (!response.ok) {
