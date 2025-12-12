@@ -34,6 +34,10 @@ def main():
     df_processed.columns = df_processed.columns.astype(str)
     
     X = df_processed.drop(columns=[target_col])
+    
+    # Drop non-numeric columns (like Datetime objects) that Sklearn can't handle
+    X = X.select_dtypes(include=['number'])
+    
     y = df_processed[target_col]
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)

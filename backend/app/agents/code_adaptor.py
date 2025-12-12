@@ -75,8 +75,9 @@ class CodeAdaptationAgent:
         tasks:
         1. Analyze the error and the code.
         2. Fix the code to resolve the error. Ensure imports are correct and data types are handled.
-        3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)) to avoid TypeError.
-        4. Output the full valid Python code.
+        3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)). 
+        4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
+        5. Output the full valid Python code.
         """
         
         fixed_code_response = self.llm.generate_response(prompt)
