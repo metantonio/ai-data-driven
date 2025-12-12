@@ -29,6 +29,10 @@ def main():
     
     # 3. Split (Assumes 'target' column exists - Agent must adapt this)
     target_col = 'target' 
+    
+    # Ensure all column names are strings to avoid sklearn TypeError
+    df_processed.columns = df_processed.columns.astype(str)
+    
     X = df_processed.drop(columns=[target_col])
     y = df_processed[target_col]
     
