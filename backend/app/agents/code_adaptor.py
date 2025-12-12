@@ -55,3 +55,34 @@ class CodeAdaptationAgent:
         # but unlikely to work if there is explanatory text. 
         # Let's try to remove any leading/trailing whitespace at least.
         return adapted_code.strip()
+
+    def fix_code(self, original_code: str, error_msg: str, schema_analysis: dict) -> str:
+        prompt = f"""
+        You are a Machine Learning Engineer. The following Python code failed to execute. Fix it.
+        
+        Error Message:
+        {error_msg}
+        
+        Original Code:
+        {original_code}
+        
+        Dataset Analysis:
+        {schema_analysis.get('analysis', '')}
+        
+        Raw Schema:
+        {schema_analysis.get('raw_schema', '')}
+        
+        Tasks:
+        1. Analyze the error and the code.
+        2. Fix the code to resolve the error. Ensure imports are correct and data types are handled.
+        3. Output the full valid Python code.
+        """
+        
+        fixed_code_response = self.llm.generate_response(prompt)
+        
+        import re
+        code_match = re.search(r'```(?:python)?\s*(.*?)```', fixed_code_response, re.DOTALL)
+        if code_match:
+            return code_match.group(1).strip()
+            
+        return fixed_code_response.strip()

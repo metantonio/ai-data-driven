@@ -35,7 +35,7 @@ export default function Results() {
 
             // 2. Execute Code
             setStage('execute');
-            const execRes = await executeCode(adaptRes.code);
+            const execRes = await executeCode(adaptRes.code, schemaAnalysis);
             setExecutionResult(execRes);
 
             if (execRes.report) {

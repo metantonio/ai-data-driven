@@ -35,8 +35,8 @@ export const adaptCode = async (schemaAnalysis: SchemaAnalysis): Promise<{ code:
     return response.data;
 };
 
-export const executeCode = async (code: string): Promise<{ stdout: string; stderr: string; report: ExecutionReport | null }> => {
-    const response = await api.post('/execute-code', { code });
+export const executeCode = async (code: string, schemaAnalysis?: SchemaAnalysis): Promise<{ stdout: string; stderr: string; report: ExecutionReport | null }> => {
+    const response = await api.post('/execute-code', { code, schema_analysis: schemaAnalysis });
     return response.data;
 };
 
