@@ -142,7 +142,7 @@ export default function Results() {
                             <p className="text-red-300/80 text-sm mt-1">{error}</p>
 
                             {/* Retry Button */}
-                            {stage === 'done' && (
+                            {stage === 'done' && error === 'Max retries reached. Execution failed.' && (
                                 <button
                                     onClick={handleRetry}
                                     className="mt-4 bg-red-500/20 hover:bg-red-500/40 text-red-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-500/50 flex items-center gap-2"
