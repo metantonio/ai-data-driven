@@ -58,6 +58,15 @@ def main():
             
         visualization_data = viz_df.to_dict(orient='records')
         
+        # 6. Save Model
+        import joblib
+        import os
+        
+        # Ensure models directory exists
+        os.makedirs('models', exist_ok=True)
+        model_path = 'models/model.joblib'
+        joblib.dump(model, model_path)
+        
         report = {
             "metrics": {
                 "mse": float(mse),
@@ -66,6 +75,7 @@ def main():
             "model_type": "Linear Regression",
             "features": list(X.columns),
             "target": target_col,
+            "model_path": model_path,
             "visualization_data": visualization_data
         }
         print(json.dumps(report))

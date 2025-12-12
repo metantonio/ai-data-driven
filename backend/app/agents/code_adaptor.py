@@ -66,6 +66,7 @@ class CodeAdaptationAgent:
         1. Implement 'load_data' to connect to the DB using the provided Connection String exactly. Use sqlalchemy.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types.
         3. Select the most likely target column from the schema for 'train_model'.
+        4. Ensure the model is saved to 'models/model.joblib' (or unique name) and 'model_path' is in the JSON report.
         
         Output the full valid Python code.
         """

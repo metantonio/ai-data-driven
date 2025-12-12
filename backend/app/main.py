@@ -20,5 +20,6 @@ def health_check():
 def read_root():
     return {"message": "Welcome to the AI-Data-Driven ML System API"}
 
-from app.api.endpoints import router as api_router
-app.include_router(api_router, prefix="/api")
+from app.api import endpoints, predict
+app.include_router(endpoints.router, prefix="/api")
+app.include_router(predict.router, prefix="/api")

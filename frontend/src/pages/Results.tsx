@@ -1,10 +1,86 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { adaptCode, executeCodeStream, generateInsights, ExecutionReport } from '../api/client';
-import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2 } from 'lucide-react';
+import { adaptCode, executeCodeStream, generateInsights, ExecutionReport, predict } from '../api/client';
+import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2, Calculator } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css'; // Import highlight.js styles
+import 'highlight.js/styles/github-dark.css';
+
+function PredictionForm({ modelPath, features }: { modelPath: string, features: string[] }) {
+    const [formData, setFormData] = useState<Record<string, string>>({});
+    const [prediction, setPrediction] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        setPrediction(null);
+
+        try {
+            const formattedData: any = {};
+            for (const key of features) {
+                const val = formData[key];
+                if (!isNaN(Number(val)) && val !== '') {
+                    formattedData[key] = Number(val);
+                } else {
+                    formattedData[key] = val;
+                }
+            }
+
+            const res = await predict(modelPath, formattedData);
+            setPrediction(res.prediction);
+        } catch (err: any) {
+            setError(err.message || 'Prediction failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-6">
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-purple-400" />
+                Interactive Prediction
+            </h3>
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {features.map((feature) => (
+                    <div key={feature}>
+                        <label className="block text-sm text-gray-400 mb-1">{feature}</label>
+                        <input
+                            type="text"
+                            className="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                            value={formData[feature] || ''}
+                            onChange={(e) => setFormData({ ...formData, [feature]: e.target.value })}
+                            required
+                        />
+                    </div>
+                ))}
+
+                <div className="md:col-span-2 mt-2">
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Predicting...' : 'Predict'}
+                    </button>
+                </div>
+            </form>
+
+            {error && <p className="text-red-400 mt-4 text-sm">{error}</p>}
+
+            {prediction !== null && (
+                <div className="mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
+                    <p className="text-sm text-green-300 mb-1">Prediction Result</p>
+                    <p className="text-3xl font-bold text-white">{typeof prediction === 'number' ? prediction.toFixed(4) : prediction}</p>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function Results() {
     const location = useLocation();
@@ -19,6 +95,9 @@ export default function Results() {
     const [insights, setInsights] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [latestCode, setLatestCode] = useState<string>('');
+
+    // Ref for abort controller
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         if (!schemaAnalysis) {
@@ -37,15 +116,28 @@ export default function Results() {
         }
 
         runPipeline();
+
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, [schemaAnalysis, algorithmType]);
 
     const runPipeline = async (codeToRun?: string) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             let code = codeToRun;
 
             if (!code) {
                 setStage('adapt');
                 const adaptRes = await adaptCode(schemaAnalysis, algorithmType);
+                if (controller.signal.aborted) return;
                 code = adaptRes.code;
             }
 
@@ -55,7 +147,11 @@ export default function Results() {
 
             setStage('execute');
 
+            let finalStateReached = false;
+
             await executeCodeStream(code!, schemaAnalysis, (update) => {
+                if (controller.signal.aborted) return;
+
                 if (update.status === 'info' || update.status === 'fixing') {
                     setStreamStatus(update.message);
                     if (update.data && update.data.code) {
@@ -64,20 +160,35 @@ export default function Results() {
                 } else if (update.status === 'error') {
                     setStreamStatus(update.message);
                 } else if (update.status === 'success') {
+                    finalStateReached = true;
+                    // If we have a cached execution result but this is a new run, update it
                     setExecutionResult(update.data);
                     generateInsightsWrapper(update.data, schemaAnalysis);
                 } else if (update.status === 'final_error') {
+                    finalStateReached = true;
                     setError(update.message);
                     if (update.data && update.data.code) {
                         setLatestCode(update.data.code);
                     }
                     setStage('done');
                 }
-            });
+            }, controller.signal);
+
+            if (controller.signal.aborted) return;
+
+            if (!finalStateReached) {
+                setStage('done');
+                if (!error) setError("Execution stream ended unexpectedly.");
+            }
 
         } catch (err: any) {
+            if (err.name === 'AbortError') return;
             setError(err.response?.data?.detail || err.message || 'Pipeline failed');
             setStage('done');
+        } finally {
+            if (abortControllerRef.current === controller) {
+                abortControllerRef.current = null;
+            }
         }
     };
 
@@ -106,7 +217,7 @@ export default function Results() {
                 replace: true
             });
         } else {
-            setError('Execution failed to produce a structured report.');
+            // Execution successful but no JSON report
             setStage('done');
         }
     };
@@ -220,6 +331,14 @@ export default function Results() {
                                 <BarChart2 className="h-5 w-5" />
                                 View Interactive Visualizations & Data
                             </button>
+                        )}
+
+                        {/* Interactive Prediction Form - NEW */}
+                        {executionResult?.report?.model_path && executionResult?.report?.features && (
+                            <PredictionForm
+                                modelPath={executionResult.report.model_path}
+                                features={executionResult.report.features}
+                            />
                         )}
 
                         {/* Insights Panel */}

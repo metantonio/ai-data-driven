@@ -16,3 +16,4 @@ absl-py==2.3.1
 ortools==9.14.6206
 numpy==2.1.1
 matplotlib==3.9.2
+joblib==1.4.2

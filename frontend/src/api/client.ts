@@ -20,6 +20,7 @@ export interface ExecutionReport {
     model_type: string;
     features: string[];
     target: string;
+    model_path?: string; // Added for interactive prediction
     visualization_data?: any[];
 }
 
@@ -88,5 +89,10 @@ export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpd
 
 export const generateInsights = async (executionReport: ExecutionReport, schemaAnalysis: SchemaAnalysis): Promise<{ insights: string }> => {
     const response = await api.post('/generate-insights', { execution_report: executionReport, schema_analysis: schemaAnalysis });
+    return response.data;
+};
+
+export const predict = async (modelPath: string, features: any) => {
+    const response = await api.post('/predict', { model_path: modelPath, features });
     return response.data;
 };
