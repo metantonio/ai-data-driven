@@ -45,47 +45,19 @@ class InsightsRequest(BaseModel):
     schema_analysis: dict
 
 @router.post("/execute-code")
-def execute_code(request: ExecuteRequest):
-    try:
+async def execute_code_endpoint(request: ExecuteRequest):
+    from fastapi.responses import StreamingResponse
+    import json
+
+    async def event_generator():
         executor = ExecutorService()
-        result = executor.execute_code(request.code)
+        # Ensure schema_analysis is passed, default to empty dict if None
+        analysis = request.schema_analysis or {}
         
-        # Auto-Correction Logic
-        if result.get("return_code") != 0 and request.schema_analysis:
-            print("Execution failed. Triggering auto-correction...")
-            agent = CodeAdaptationAgent(llm_service)
-            max_retries = 3
-            
-            for attempt in range(max_retries):
-                print(f"Auto-correction attempt {attempt + 1}/{max_retries}")
-                try:
-                    # Fix the code
-                    fixed_code = agent.fix_code(request.code, result["stderr"], request.schema_analysis)
-                    
-                    # Execute fixed code
-                    new_result = executor.execute_code(fixed_code)
-                    
-                    # Update result
-                    result = new_result
-                    
-                    # If successful, break
-                    if result.get("return_code") == 0:
-                        print("Auto-correction successful!")
-                        break
-                    else:
-                        # Update code for next iteration to fix the NEW code's error
-                        request.code = fixed_code
-                        
-                except Exception as inner_e:
-                    print(f"Auto-correction failed: {inner_e}")
-                    # Continue or break? Let's continue to try again if we have retries left, 
-                    # but honestly if the agent fails to generate, we might be stuck.
-                    # For now just continue.
-                    continue
-                    
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        async for update in executor.execute_code(request.code, analysis, llm_service):
+            yield json.dumps(update) + "\n"
+
+    return StreamingResponse(event_generator(), media_type="application/x-ndjson")
 
 @router.post("/generate-insights")
 def generate_insights(request: InsightsRequest):
