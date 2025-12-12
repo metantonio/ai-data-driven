@@ -16,10 +16,7 @@ export interface SchemaAnalysis {
 }
 
 export interface ExecutionReport {
-    metrics: {
-        mse: number;
-        r2: number;
-    };
+    metrics: Record<string, any>; // Record to support dynamic keys like 'silhouette_score', 'accuracy', etc.
     model_type: string;
     features: string[];
     target: string;

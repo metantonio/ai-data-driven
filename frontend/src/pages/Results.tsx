@@ -127,18 +127,18 @@ export default function Results() {
                             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-6 rounded-2xl shadow-lg space-y-6">
                                 <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-700/50 pb-2">Model Metrics</h2>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
-                                        <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">MSE</div>
-                                        <div className="text-2xl font-bold text-white">{executionResult.report.metrics.mse.toFixed(4)}</div>
-                                    </div>
-                                    <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
-                                        <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">R2 Score</div>
-                                        <div className="text-2xl font-bold text-emerald-400">{executionResult.report.metrics.r2.toFixed(4)}</div>
-                                    </div>
+                                    {Object.entries(executionResult.report.metrics).map(([key, value]) => (
+                                        <div key={key} className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                                            <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">{key.replace(/_/g, ' ')}</div>
+                                            <div className="text-2xl font-bold text-white">
+                                                {typeof value === 'number' ? value.toLocaleString(undefined, { maximumFractionDigits: 4 }) : String(value)}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                                 <div className="text-sm text-slate-400 flex flex-wrap gap-2">
-                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300">Target: {executionResult.report.target}</span>
-                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300">Features: {executionResult.report.features.length}</span>
+                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300">Target: {executionResult.report.target || 'N/A'}</span>
+                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300">Features: {executionResult.report.features?.length || 0}</span>
                                 </div>
                             </div>
                         )}
