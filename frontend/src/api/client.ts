@@ -22,8 +22,11 @@ export interface ExecutionReport {
     target: string;
 }
 
-export const analyzeSchema = async (connectionString: string): Promise<SchemaAnalysis> => {
-    const response = await api.post('/analyze-schema', { connection_string: connectionString });
+export const analyzeSchema = async (connectionString: string, algorithmType: string) => {
+    const response = await axios.post(`${API_BASE_URL}/analyze-schema`, {
+        connection_string: connectionString,
+        algorithm_type: algorithmType
+    });
     return response.data;
 };
 

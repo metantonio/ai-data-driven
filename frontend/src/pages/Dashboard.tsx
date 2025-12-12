@@ -23,7 +23,7 @@ export default function Dashboard() {
                 dbString = `sqlite:///${dbString}`;
             }
 
-            const data = await analyzeSchema(dbString);
+            const data = await analyzeSchema(dbString, algorithmType);
             navigate('/results', { state: { schemaAnalysis: data, connectionString: dbString, algorithmType } });
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to analyze schema');

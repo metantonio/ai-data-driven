@@ -9,17 +9,18 @@ llm_service = LLMService()
 
 class AnalyzeRequest(BaseModel):
     connection_string: str
+    algorithm_type: str = "linear_regression"
 
 class AdaptRequest(BaseModel):
     schema_analysis: dict
     algorithm_type: str = "linear_regression"
 
 @router.post("/analyze-schema")
-def analyze_schema(request: AnalyzeRequest):
+async def analyze_schema_endpoint(request: AnalyzeRequest):
     try:
         agent = SchemaAnalysisAgent(llm_service)
-        result = agent.analyze(request.connection_string)
-        return result
+        analysis = agent.analyze(request.connection_string, request.algorithm_type)
+        return analysis
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
