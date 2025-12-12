@@ -13,6 +13,7 @@ export default function Results() {
 
     // State
     const [stage, setStage] = useState<'adapt' | 'execute' | 'insight' | 'done'>('adapt');
+    const [streamStatus, setStreamStatus] = useState<string>('');
     const [adaptedCode, setAdaptedCode] = useState<string>('');
     const [executionResult, setExecutionResult] = useState<{ stdout: string; stderr: string; report: ExecutionReport | null } | null>(null);
     const [insights, setInsights] = useState<string>('');
@@ -92,7 +93,7 @@ export default function Results() {
                         <p className="text-slate-400 flex items-center gap-2">
                             {stage === 'done' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Loader className="h-4 w-4 animate-spin text-cyan-500" />}
                             {stage === 'adapt' && 'Adapting code template...'}
-                            {stage === 'execute' && 'Executing ML pipeline...'}
+                            {stage === 'execute' && (streamStatus || 'Executing ML pipeline...')}
                             {stage === 'insight' && 'Generating AI insights...'}
                             {stage === 'done' && 'Pipeline execution complete'}
                         </p>
