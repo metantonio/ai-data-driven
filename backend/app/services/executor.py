@@ -106,7 +106,7 @@ class ExecutorService:
                 
                 else:
                     print(f"[Executor] Execution Failed. RC={return_code}. Stderr len={len(stderr)}")
-                    yield {"status": "error", "message": f"Attempt {attempt} failed: {stderr[-200:]}..."}
+                    yield {"status": "error", "message": f"Attempt {attempt} failed: {stderr[-1000:]}..."}
                     
                     if attempt <= max_retries:
                         yield {"status": "fixing", "message": "Analyzing error and applying fix..."}

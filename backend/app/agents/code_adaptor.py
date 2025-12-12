@@ -107,7 +107,8 @@ class CodeAdaptationAgent:
         4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
         5. IF error is related to missing columns/tables: STRICTLY check the 'Raw Schema' provided above and use the exact column names found there.
         6. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
-        7. Output the full valid Python code.
+        7. IGNORE DeprecationWarnings or FutureWarnings unless they are the direct cause of the crash. Focus on the 'Traceback' and the final 'Exception'.
+        8. Output the full valid Python code.
         """
         
         fixed_code_response = self.llm.generate_response(prompt)
