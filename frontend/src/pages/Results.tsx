@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { adaptCode, executeCode, generateInsights, SchemaAnalysis, ExecutionReport } from '../api/client';
+import { adaptCode, executeCode, executeCodeStream, generateInsights, SchemaAnalysis, ExecutionReport } from '../api/client';
 import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -18,6 +18,7 @@ export default function Results() {
     const [executionResult, setExecutionResult] = useState<{ stdout: string; stderr: string; report: ExecutionReport | null } | null>(null);
     const [insights, setInsights] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+    const [latestCode, setLatestCode] = useState<string>('');
 
     useEffect(() => {
         if (!schemaAnalysis) {
@@ -25,7 +26,6 @@ export default function Results() {
             return;
         }
 
-        // Check if we already have results in state (from coming back)
         const cachedResult = location.state?.executionResult;
         const cachedInsights = location.state?.insights;
 
@@ -33,47 +33,76 @@ export default function Results() {
             setExecutionResult(cachedResult);
             if (cachedInsights) setInsights(cachedInsights);
             setStage('done');
-            return; // Skip running pipeline
+            return;
         }
 
         runPipeline();
-    }, [schemaAnalysis, algorithmType]); // Added algorithmType to dependency array
+    }, [schemaAnalysis, algorithmType]);
 
-    const runPipeline = async () => {
+    const runPipeline = async (codeToRun?: string) => {
         try {
-            // 1. Adapt Code
-            setStage('adapt');
-            const adaptRes = await adaptCode(schemaAnalysis, algorithmType); // Pass algorithmType
-            setAdaptedCode(adaptRes.code);
+            let code = codeToRun;
 
-            // 2. Execute Code
-            setStage('execute');
-            const execRes = await executeCode(adaptRes.code, schemaAnalysis);
-            setExecutionResult(execRes);
-
-            if (execRes.report) {
-                // 3. Generate Insights
-                setStage('insight');
-                const insightRes = await generateInsights(execRes.report, schemaAnalysis);
-                setInsights(insightRes.insights);
-                setStage('done');
-
-                // Persist results to history state so they survive navigation
-                navigate('.', {
-                    state: {
-                        ...location.state,
-                        executionResult: execRes,
-                        insights: insightRes.insights
-                    },
-                    replace: true
-                });
-            } else {
-                setError('Execution failed to produce a structured report. Check stderr.');
-                setStage('done'); // Stop here but marked as done with error
+            if (!code) {
+                setStage('adapt');
+                const adaptRes = await adaptCode(schemaAnalysis, algorithmType);
+                code = adaptRes.code;
             }
+
+            setAdaptedCode(code!);
+            setLatestCode(code!);
+            setError(null);
+
+            setStage('execute');
+
+            await executeCodeStream(code!, schemaAnalysis, (update) => {
+                if (update.status === 'info' || update.status === 'fixing') {
+                    setStreamStatus(update.message);
+                    if (update.data && update.data.code) {
+                        setLatestCode(update.data.code);
+                    }
+                } else if (update.status === 'success') {
+                    setExecutionResult(update.data);
+                    generateInsightsWrapper(update.data, schemaAnalysis);
+                } else if (update.status === 'final_error') {
+                    setError(update.message);
+                    if (update.data && update.data.code) {
+                        setLatestCode(update.data.code);
+                    }
+                    setStage('done');
+                }
+            });
 
         } catch (err: any) {
             setError(err.response?.data?.detail || err.message || 'Pipeline failed');
+            setStage('done');
+        }
+    };
+
+    const handleRetry = () => {
+        if (latestCode) {
+            runPipeline(latestCode);
+        }
+    };
+
+    const generateInsightsWrapper = async (execResult: any, analysis: any) => {
+        if (execResult.report) {
+            setStage('insight');
+            const insightRes = await generateInsights(execResult.report, analysis);
+            setInsights(insightRes.insights);
+            setStage('done');
+
+            navigate('.', {
+                state: {
+                    ...location.state,
+                    executionResult: execResult,
+                    insights: insightRes.insights
+                },
+                replace: true
+            });
+        } else {
+            setError('Execution failed to produce a structured report.');
+            setStage('done');
         }
     };
 
@@ -106,6 +135,17 @@ export default function Results() {
                         <div>
                             <h3 className="font-bold text-red-200">Processing Error</h3>
                             <p className="text-red-300/80 text-sm mt-1">{error}</p>
+
+                            {/* Retry Button */}
+                            {stage === 'done' && (
+                                <button
+                                    onClick={handleRetry}
+                                    className="mt-4 bg-red-500/20 hover:bg-red-500/40 text-red-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-500/50 flex items-center gap-2"
+                                >
+                                    <Play className="h-4 w-4" />
+                                    Continue Fixing (Try 3 more attempts)
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

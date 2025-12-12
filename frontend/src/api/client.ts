@@ -41,6 +41,46 @@ export const executeCode = async (code: string, schemaAnalysis?: SchemaAnalysis)
     return response.data;
 };
 
+export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpdate: (data: any) => void) => {
+    const response = await fetch(`${API_BASE_URL}/execute-code`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code, schema_analysis: schemaAnalysis }),
+    });
+
+    if (!response.body) return;
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+
+        // Process all complete lines
+        for (let i = 0; i < lines.length - 1; i++) {
+            const line = lines[i].trim();
+            if (line) {
+                try {
+                    const data = JSON.parse(line);
+                    onUpdate(data);
+                } catch (e) {
+                    console.error("Error parsing stream line:", line, e);
+                }
+            }
+        }
+
+        // Keep the last partial line in buffer
+        buffer = lines[lines.length - 1];
+    }
+};
+
 export const generateInsights = async (executionReport: ExecutionReport, schemaAnalysis: SchemaAnalysis): Promise<{ insights: string }> => {
     const response = await api.post('/generate-insights', { execution_report: executionReport, schema_analysis: schemaAnalysis });
     return response.data;

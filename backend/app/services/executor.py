@@ -5,61 +5,77 @@ import json
 import sys
 
 class ExecutorService:
-    def execute_code(self, code: str) -> dict:
+    async def execute_code(self, code: str, schema_analysis: dict, llm_service):
         """
-        Executes the provided Python code in a separate process.
-        Returns a dictionary containing stdout, stderr, and any parsed JSON report.
+        Executes the provided Python code.
+        Yields status updates: {"status": "info" | "error" | "success", "message": str, "data": ...}
         """
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
-            temp_file.write(code)
-            temp_file_path = temp_file.name
+        from app.agents.code_adaptor import CodeAdaptationAgent 
+        
+        max_retries = 2
+        current_code = code
+        attempt = 0
+        temp_file_path = "pipeline.py"
 
-        try:
-            # Run the code
-            result = subprocess.run(
-                [sys.executable, temp_file_path],
-                capture_output=True,
-                text=True,
-                timeout=60  # Timeout after 60 seconds
-            )
-            
-            stdout = result.stdout
-            stderr = result.stderr
-            return_code = result.returncode
-            
-            # Try to parse the last line as JSON (Standardized Reporting)
-            parsed_report = None
+        while attempt <= max_retries:
+            attempt += 1
+            yield {"status": "info", "message": f"Execution attempt {attempt}/{max_retries + 1}...", "data": {"code": current_code}}
+
+            # 1. Write Code to File
+            with open(temp_file_path, "w") as f:
+                f.write(current_code)
+
+            # 2. Run Subprocess
             try:
-                lines = stdout.strip().split('\n')
-                if lines:
-                    last_line = lines[-1]
-                    parsed_report = json.loads(last_line)
-            except json.JSONDecodeError:
-                parsed_report = None
+                yield {"status": "info", "message": "Running pipeline script...", "data": {"code": current_code}}
+                
+                # Run async if possible, but here using blocking for simplicity within generator
+                # In a real async app we'd use asyncio.create_subprocess_exec
+                proc = subprocess.run(
+                    [sys.executable, temp_file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                
+                stdout = proc.stdout
+                stderr = proc.stderr
+                return_code = proc.returncode
 
-            return {
-                "stdout": stdout,
-                "stderr": stderr,
-                "return_code": return_code,
-                "report": parsed_report
-            }
+                if return_code == 0:
+                    try:
+                        lines = stdout.strip().split('\n')
+                        last_line = lines[-1] if lines else "{}"
+                        report = json.loads(last_line)
+                        yield {"status": "success", "message": "Execution successful", "data": {"stdout": stdout, "stderr": stderr, "report": report, "code": current_code}}
+                        return
+                    except json.JSONDecodeError:
+                        yield {"status": "success", "message": "Execution finished (no JSON report)", "data": {"stdout": stdout, "stderr": stderr, "report": None, "code": current_code}}
+                        return
+                
+                else:
+                    yield {"status": "error", "message": f"Attempt {attempt} failed: {stderr[-200:]}..."}
+                    
+                    if attempt <= max_retries:
+                        yield {"status": "fixing", "message": "Analyzing error and applying fix..."}
+                        
+                        adapter = CodeAdaptationAgent(llm_service)
+                        current_code = adapter.fix_code(current_code, stderr, schema_analysis)
+                        
+                        yield {"status": "info", "message": "Fix applied. Retrying...", "data": {"code": current_code}}
+                    else:
+                        yield {"status": "final_error", "message": "Max retries reached. Execution failed.", "data": {"stdout": stdout, "stderr": stderr, "report": None, "code": current_code}}
+                        return
 
-        except subprocess.TimeoutExpired:
-            return {
-                "stdout": "",
-                "stderr": "Execution timed out.",
-                "return_code": -1,
-                "report": None
-            }
-        except Exception as e:
-            return {
-                "stdout": "",
-                "stderr": str(e),
-                "return_code": -1,
-                "report": None
-            }
-        finally:
-            # Cleanup
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+            except subprocess.TimeoutExpired:
+                yield {"status": "error", "message": "Execution timed out."}
+                return
+            except Exception as e:
+                 yield {"status": "final_error", "message": f"System error: {str(e)}", "data": {"stdout": "", "stderr": str(e), "report": None, "code": current_code}}
+                 return
+            finally:
+                if os.path.exists(temp_file_path):
+                    try:
+                         os.remove(temp_file_path)
+                    except:
+                        pass
