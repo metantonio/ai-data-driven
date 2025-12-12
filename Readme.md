@@ -32,7 +32,7 @@ npm run dev
 
 ## 3. End-to-End Test Scenario
 1. Open Browser to `http://localhost:5173`.
-2. In the "Database Connection String" field, enter: `sqlite:///../example.db` or `sqlite:///example_casino.db`.
+2. In the "Database Connection String" field, enter: `sqlite:///../example.db` or `sqlite:///../example_casino.db`.
    (Note: `example.db` was created in the root directory. The path is relative to where the backend runs. Since we run from `backend/`, we use `../example.db`. Alternatively, use absolute path).
 3. Click "Analyze Database".
 4. Monitor the "Pipeline Results" page:
