@@ -5,6 +5,7 @@ import { analyzeSchema, SchemaAnalysis } from '../api/client';
 
 export default function Dashboard() {
     const [connectionString, setConnectionString] = useState('');
+    const [algorithmType, setAlgorithmType] = useState('linear_regression');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -19,12 +20,11 @@ export default function Dashboard() {
                 // Assume it's a relative path to the backend, so we might need ../ prefix if running from nested dir
                 // But for simplicity in UI, we just prepend sqlite:///. 
                 // The user might need to adjust relative paths.
-                // Given the walkthrough uses ../example.db, let's just ensure protocol.
                 dbString = `sqlite:///${dbString}`;
             }
 
             const data = await analyzeSchema(dbString);
-            navigate('/results', { state: { schemaAnalysis: data, connectionString: dbString } });
+            navigate('/results', { state: { schemaAnalysis: data, connectionString: dbString, algorithmType } });
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to analyze schema');
         } finally {
@@ -46,6 +46,25 @@ export default function Dashboard() {
 
                 <div className="bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700/50 backdrop-blur-sm">
                     <div className="space-y-6">
+                        <div className="text-left space-y-2">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Analysis Type</label>
+                            <select
+                                value={algorithmType}
+                                onChange={(e) => setAlgorithmType(e.target.value)}
+                                className="w-full pl-4 pr-10 py-3 bg-slate-900/50 border border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-100 transition-all text-sm appearance-none"
+                            >
+                                <option value="linear_regression">Linear Regression</option>
+                                <option value="logistic_regression">Logistic Regression (Classification)</option>
+                                <option value="kmeans">K-Means Clustering</option>
+                                <option value="hierarchical">Hierarchical Clustering</option>
+                                <option value="time_series">Time Series Forecasting</option>
+                                <option value="association_rules">Association Rules (Market Basket)</option>
+                                <option value="reinforcement_learning">Reinforcement Learning</option>
+                                <option value="linear_programming">Linear Programming (Optimization)</option>
+                                <option value="mixed_integer_programming">Mixed Integer Programming</option>
+                            </select>
+                        </div>
+
                         <div className="text-left space-y-2">
                             <label className="text-sm font-medium text-slate-300 ml-1">Database Connection String</label>
                             <div className="relative">

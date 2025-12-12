@@ -7,9 +7,9 @@ import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css'; // Import highlight.js styles
 
 export default function Results() {
-    const { state } = useLocation();
+    const location = useLocation();
     const navigate = useNavigate();
-    const schemaAnalysis = state?.schemaAnalysis as SchemaAnalysis;
+    const { schemaAnalysis, connectionString, algorithmType } = location.state || {};
 
     // State
     const [stage, setStage] = useState<'adapt' | 'execute' | 'insight' | 'done'>('adapt');
@@ -24,13 +24,13 @@ export default function Results() {
             return;
         }
         runPipeline();
-    }, [schemaAnalysis]);
+    }, [schemaAnalysis, algorithmType]); // Added algorithmType to dependency array
 
     const runPipeline = async () => {
         try {
             // 1. Adapt Code
             setStage('adapt');
-            const adaptRes = await adaptCode(schemaAnalysis);
+            const adaptRes = await adaptCode(schemaAnalysis, algorithmType); // Pass algorithmType
             setAdaptedCode(adaptRes.code);
 
             // 2. Execute Code

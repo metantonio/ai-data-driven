@@ -2,19 +2,47 @@ from app.services.llm_service import LLMService
 import os
 
 class CodeAdaptationAgent:
-    def __init__(self, llm_service: LLMService, template_path: str = "../ml_template/base_pipeline.py"):
+    def __init__(self, llm_service: LLMService, template_path: str = None):
         self.llm = llm_service
         self.template_path = template_path
 
-    def adapt(self, schema_analysis: dict) -> str:
-        # 1. Load Template
+    def adapt(self, schema_analysis: dict, algorithm_type: str = "linear_regression") -> str:
+        # Determine template based on algorithm_type
+        template_map = {
+            "linear_regression": "linear_regression.py",
+            "logistic_regression": "logistic_regression.py",
+            "kmeans": "clustering_kmeans.py",
+            "hierarchical": "clustering_hierarchical.py",
+            "time_series": "time_series.py",
+            "linear_programming": "linear_programming.py",
+            "mixed_integer_programming": "mixed_integer_programming.py",
+            "reinforcement_learning": "reinforcement_learning.py",
+            "association_rules": "association_rules.py"
+        }
+        
+        filename = template_map.get(algorithm_type, "linear_regression.py")
+        
+        # Load Template
         try:
-            with open(self.template_path, 'r') as f:
+            # Try specific path if set, else look in standard locations with filename
+            if self.template_path:
+                path = self.template_path
+            else:
+                # Default relative lookups
+                path = f"../ml_template/{filename}"
+                
+            with open(path, 'r') as f:
                 template_code = f.read()
         except FileNotFoundError:
-            # Fallback for when running from backend dir
-            with open(os.path.join(os.path.dirname(__file__), "../../../ml_template/base_pipeline.py"), 'r') as f:
-                template_code = f.read()
+            # Fallback relative to this file
+            import os
+            base_dir = os.path.dirname(__file__)
+            path = os.path.join(base_dir, f"../../../ml_template/{filename}")
+            try:
+                with open(path, 'r') as f:
+                    template_code = f.read()
+            except FileNotFoundError:
+                return f"# Error: Could not find template for {algorithm_type} at {path}"
 
         # 2. Prompt LLM to fill placeholders
         connection_string = schema_analysis.get('connection_string', 'sqlite:///../example.db')

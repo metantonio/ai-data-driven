@@ -30,8 +30,8 @@ export const analyzeSchema = async (connectionString: string): Promise<SchemaAna
     return response.data;
 };
 
-export const adaptCode = async (schemaAnalysis: SchemaAnalysis): Promise<{ code: string }> => {
-    const response = await api.post('/adapt-code', { schema_analysis: schemaAnalysis });
+export const adaptCode = async (schemaAnalysis: SchemaAnalysis, algorithmType: string = "linear_regression"): Promise<{ code: string }> => {
+    const response = await api.post('/adapt-code', { schema_analysis: schemaAnalysis, algorithm_type: algorithmType });
     return response.data;
 };
 

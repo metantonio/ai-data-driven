@@ -12,6 +12,7 @@ class AnalyzeRequest(BaseModel):
 
 class AdaptRequest(BaseModel):
     schema_analysis: dict
+    algorithm_type: str = "linear_regression"
 
 @router.post("/analyze-schema")
 def analyze_schema(request: AnalyzeRequest):
@@ -26,7 +27,7 @@ def analyze_schema(request: AnalyzeRequest):
 def adapt_code(request: AdaptRequest):
     try:
         agent = CodeAdaptationAgent(llm_service)
-        result = agent.adapt(request.schema_analysis)
+        result = agent.adapt(request.schema_analysis, request.algorithm_type)
         return {"code": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
