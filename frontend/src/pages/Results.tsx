@@ -39,45 +39,78 @@ function PredictionForm({ modelPath, features }: { modelPath: string, features: 
     };
 
     return (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-6">
-            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-purple-400" />
-                Interactive Prediction
-            </h3>
+        <div className="relative group overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700/50 rounded-2xl p-8 shadow-2xl mt-8">
+            {/* Ambient Background Effect */}
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-1000"></div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {features.map((feature) => (
-                    <div key={feature}>
-                        <label className="block text-sm text-gray-400 mb-1">{feature}</label>
-                        <input
-                            type="text"
-                            className="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
-                            value={formData[feature] || ''}
-                            onChange={(e) => setFormData({ ...formData, [feature]: e.target.value })}
-                            required
-                        />
+            <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-8 border-b border-slate-800 pb-4">
+                    <div className="p-2.5 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                        <Calculator className="w-6 h-6 text-purple-400" />
                     </div>
-                ))}
-
-                <div className="md:col-span-2 mt-2">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-                    >
-                        {loading ? 'Predicting...' : 'Predict'}
-                    </button>
+                    <div>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Interactive Prediction</h3>
+                        <p className="text-slate-400 text-sm">Test the model with custom inputs</p>
+                    </div>
                 </div>
-            </form>
 
-            {error && <p className="text-red-400 mt-4 text-sm">{error}</p>}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {features.map((feature) => (
+                            <div key={feature} className="space-y-2">
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">
+                                    {feature.replace(/_/g, ' ')}
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all font-mono text-sm"
+                                    placeholder={`Enter ${feature}...`}
+                                    value={formData[feature] || ''}
+                                    onChange={(e) => setFormData({ ...formData, [feature]: e.target.value })}
+                                    required
+                                />
+                            </div>
+                        ))}
+                    </div>
 
-            {prediction !== null && (
-                <div className="mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-                    <p className="text-sm text-green-300 mb-1">Prediction Result</p>
-                    <p className="text-3xl font-bold text-white">{typeof prediction === 'number' ? prediction.toFixed(4) : prediction}</p>
-                </div>
-            )}
+                    <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center gap-6">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full md:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-slate-700 disabled:to-slate-800 text-white px-8 py-3.5 rounded-xl font-semibold shadow-lg shadow-purple-900/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 min-w-[160px]"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader className="w-4 h-4 animate-spin" />
+                                    <span>Calculating...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="w-4 h-4 fill-current" />
+                                    <span>Generate Prediction</span>
+                                </>
+                            )}
+                        </button>
+
+                        {prediction !== null && (
+                            <div className="flex-1 w-full flex items-center justify-center md:justify-end">
+                                <div className="flex items-center gap-4 bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-xl animate-in fade-in slide-in-from-left-4 duration-500">
+                                    <span className="text-emerald-400 font-medium text-sm uppercase tracking-wider">Result:</span>
+                                    <span className="text-2xl font-bold text-white font-mono tracking-tight">
+                                        {typeof prediction === 'number' ? prediction.toLocaleString(undefined, { maximumFractionDigits: 4 }) : prediction}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="flex-1 w-full text-center md:text-right text-red-400 text-sm animate-in fade-in">
+                                Error: {error}
+                            </div>
+                        )}
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }
@@ -341,28 +374,41 @@ export default function Results() {
                             />
                         )}
 
-                        {/* Insights Panel */}
-                        <div className={`space-y-4 transition-all duration-500 delay-200 ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
-                            <div className="flex items-center gap-2 text-yellow-400">
-                                <FileText className="h-5 w-5" />
-                                <h2 className="font-semibold text-lg">AI-Generated Insights</h2>
-                            </div>
-                            <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 text-slate-200 leading-relaxed shadow-lg">
-                                <div className="prose prose-invert max-w-none">
-                                    {insights ? (
-                                        <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-                                            {insights}
-                                        </ReactMarkdown>
-                                    ) : (
-                                        <div className="flex items-center gap-2 text-slate-500 italic">
-                                            {stage === 'insight' ? <Loader className="animate-spin h-4 w-4" /> : null}
-                                            Waiting for report generation...
-                                        </div>
-                                    )}
-                                </div>
+                    </div>
+                </div>
+
+                {/* Centered Insights Panel - MOVED HERE */}
+                <div className={`transition-all duration-500 delay-200 mt-12 flex flex-col items-center ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                    <div className="w-full md:w-3/4 max-w-4xl space-y-4">
+                        <div className="flex items-center justify-center gap-2 text-yellow-400">
+                            <FileText className="h-6 w-6" />
+                            <h2 className="font-semibold text-2xl">AI-Generated Insights</h2>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 text-slate-200 leading-relaxed shadow-xl backdrop-blur-sm">
+                            <div className="prose prose-invert prose-lg max-w-none">
+                                {insights ? (
+                                    <ReactMarkdown
+                                        rehypePlugins={[rehypeHighlight]}
+                                        components={{
+                                            p: ({ node, ...props }) => <p className="mb-4 whitespace-pre-wrap" {...props} />
+                                        }}
+                                    >
+                                        {insights}
+                                    </ReactMarkdown>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center gap-4 py-8 text-slate-500 italic">
+                                        {stage === 'insight' ? (
+                                            <>
+                                                <Loader className="animate-spin h-8 w-8 text-yellow-500" />
+                                                <span>Analyzing results and generating insights...</span>
+                                            </>
+                                        ) : (
+                                            <span>Waiting for report generation...</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
-
                     </div>
                 </div>
 
