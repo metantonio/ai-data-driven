@@ -16,15 +16,16 @@ class ExecutorService:
         max_retries = 2
         current_code = code
         attempt = 0
-        temp_file_path = "pipeline.py"
 
         while attempt <= max_retries:
             attempt += 1
             yield {"status": "info", "message": f"Execution attempt {attempt}/{max_retries + 1}...", "data": {"code": current_code}}
 
             # 1. Write Code to File
-            with open(temp_file_path, "w") as f:
+            # Use tempfile to avoid triggering uvicorn reload by writing to watched directory
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
                 f.write(current_code)
+                temp_file_path = f.name
 
             # 2. Run Subprocess
             try:
