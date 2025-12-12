@@ -29,18 +29,22 @@ class ExecutorService:
             try:
                 yield {"status": "info", "message": "Running pipeline script...", "data": {"code": current_code}}
                 
-                # Run async if possible, but here using blocking for simplicity within generator
-                # In a real async app we'd use asyncio.create_subprocess_exec
-                proc = subprocess.run(
-                    [sys.executable, temp_file_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
+                # Use asyncio for non-blocking subprocess
+                proc = await asyncio.create_subprocess_exec(
+                    sys.executable, temp_file_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
                 )
                 
-                stdout = proc.stdout
-                stderr = proc.stderr
-                return_code = proc.returncode
+                try:
+                    stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=60)
+                    stdout = stdout_bytes.decode()
+                    stderr = stderr_bytes.decode()
+                    return_code = proc.returncode
+                except asyncio.TimeoutError:
+                    proc.kill()
+                    yield {"status": "error", "message": "Execution timed out."}
+                    return
 
                 if return_code == 0:
                     try:
@@ -67,9 +71,6 @@ class ExecutorService:
                         yield {"status": "final_error", "message": "Max retries reached. Execution failed.", "data": {"stdout": stdout, "stderr": stderr, "report": None, "code": current_code}}
                         return
 
-            except subprocess.TimeoutExpired:
-                yield {"status": "error", "message": "Execution timed out."}
-                return
             except Exception as e:
                  yield {"status": "final_error", "message": f"System error: {str(e)}", "data": {"stdout": "", "stderr": str(e), "report": None, "code": current_code}}
                  return
