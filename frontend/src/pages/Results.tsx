@@ -82,8 +82,11 @@ export default function Results() {
     };
 
     const handleRetry = () => {
-        if (latestCode) {
-            runPipeline(latestCode);
+        const codeToRetry = latestCode || adaptedCode;
+        if (codeToRetry) {
+            runPipeline(codeToRetry);
+        } else {
+            console.error("No code available to retry");
         }
     };
 

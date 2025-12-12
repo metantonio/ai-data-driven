@@ -50,6 +50,10 @@ export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpd
         body: JSON.stringify({ code, schema_analysis: schemaAnalysis }),
     });
 
+    if (!response.ok) {
+        throw new Error(`Execution failed with status: ${response.status} ${response.statusText}`);
+    }
+
     if (!response.body) return;
 
     const reader = response.body.getReader();
