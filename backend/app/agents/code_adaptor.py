@@ -105,8 +105,9 @@ class CodeAdaptationAgent:
         2. Fix the code to resolve the error. Ensure imports are correct and data types are handled.
         3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)). 
         4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
-        4. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
-        5. Output the full valid Python code.
+        5. IF error is related to missing columns/tables: STRICTLY check the 'Raw Schema' provided above and use the exact column names found there.
+        6. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
+        7. Output the full valid Python code.
         """
         
         fixed_code_response = self.llm.generate_response(prompt)

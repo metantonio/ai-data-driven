@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { adaptCode, executeCode, executeCodeStream, generateInsights, SchemaAnalysis, ExecutionReport } from '../api/client';
+import { adaptCode, executeCodeStream, generateInsights, ExecutionReport } from '../api/client';
 import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -9,7 +9,7 @@ import 'highlight.js/styles/github-dark.css'; // Import highlight.js styles
 export default function Results() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { schemaAnalysis, connectionString, algorithmType } = location.state || {};
+    const { schemaAnalysis, algorithmType } = location.state || {};
 
     // State
     const [stage, setStage] = useState<'adapt' | 'execute' | 'insight' | 'done'>('adapt');

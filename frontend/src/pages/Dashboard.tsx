@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Database, ArrowRight, Loader } from 'lucide-react';
-import { analyzeSchema, SchemaAnalysis } from '../api/client';
+import { analyzeSchema } from '../api/client';
 
 export default function Dashboard() {
     const [connectionString, setConnectionString] = useState('');
