@@ -90,6 +90,7 @@ class ExecutorService:
 
                 stdout = result.stdout
                 stderr = result.stderr
+                print(f"[Executor] Output={result.stdout} Error={result.stderr}")
                 return_code = result.returncode
 
                 if return_code == 0:

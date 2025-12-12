@@ -63,10 +63,19 @@ class CodeAdaptationAgent:
         {template_code}
         
         Tasks:
-        1. Implement 'load_data' to connect to the DB using the provided Connection String exactly. Use sqlalchemy.
-        2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types.
+        1. Implement 'load_data' to connect to the DB using the provided Connection String exactly. Use sqlalchemy. 
+           IMPORTANT: 
+           - ALWAYS include Primary Key/Foreign Key columns (e.g., 'id', 'casino_id') for merging.
+           - ALWAYS include ALL columns needed for features (e.g., 'city', 'state', 'type', 'gender') in the SELECT statement.
+        2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
+           - Check if columns exist before applying operations like 'get_dummies' or 'drop'.
+           - If a column is missing, print a warning but do not crash if possible, or fail explicitly with 'raise ValueError'.
         3. Select the most likely target column from the schema for 'train_model'.
         4. Ensure the model is saved to 'models/model.joblib' (or unique name) and 'model_path' is in the JSON report.
+        5. DO NOT wrap the entire logic in a try-except block that prints a custom message. Allow Python's standard traceback or the template's main try-except to handle errors so the process exits with code 1.
+        6. DO NOT print the dataframe to stdout (e.g., no `print(df)`). The ONLY output at the end must be the JSON `report`. Printing large text will break the JSON parsing.
+        7. IMPORTANT: For OneHotEncoder, use `sparse_output=False` (scikit-learn >= 1.2) instead of `sparse=False`.
+        8. IMPORTANT: If the algorithm is a CLASSIFIER (e.g., LogisticRegression, RandomForestClassifier) but the target column is CONTINUOUS (float/int with many unique values), you MUST convert it to binary/categorical classes in `preprocess_data`. Example: `df['target'] = (df['target'] > 0).astype(int)`. Do not try to predict continuous values with a classifier.
         
         Output the full valid Python code.
         """
@@ -99,7 +108,7 @@ class CodeAdaptationAgent:
         {schema_analysis.get('analysis', '')}
         
         Raw Schema:
-        {schema_analysis.get('raw_schema', '')}
+         {schema_analysis.get('raw_schema', '')}
         
         tasks:
         1. Analyze the error and the code.
@@ -107,9 +116,13 @@ class CodeAdaptationAgent:
         3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)). 
         4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
         5. IF error is related to missing columns/tables: STRICTLY check the 'Raw Schema' provided above and use the exact column names found there.
+           - NOTE: 'casinos' table usually has 'id', not 'casino_id'. 'games' table has 'casino_id'. Check your merge keys carefully.
         6. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
         7. IGNORE DeprecationWarnings or FutureWarnings unless they are the direct cause of the crash. Focus on the 'Traceback' and the final 'Exception'.
-        8. Output the full valid Python code.
+        8. CRITICAL: DO NOT wrap the code in a `try-except` block that prints an error and continues or exits with 0. Let the script crash with a traceback, or use `traceback.print_exc(); exit(1)` if you must catch it. The system needs a non-zero exit code to know it failed.
+        9. IMPORTANT: If the error is regarding 'OneHotEncoder' and 'sparse', replace `sparse=False` with `sparse_output=False`.
+        10. IF the error is "Classification metrics can't handle a mix of continuous and binary targets", it means you are using a Classifier on a Regression target. Fix this by converting the target variable `y` to binary (e.g., `y = (y > y.mean()).astype(int)`) or using a Regressor instead.
+        11. Output the full valid Python code.
         """
         
         fixed_code_response = self.llm.generate_response(prompt)

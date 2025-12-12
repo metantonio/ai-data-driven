@@ -9,6 +9,7 @@ router = APIRouter()
 class PredictRequest(BaseModel):
     model_path: str
     features: dict
+    model_config = {'protected_namespaces': ()}
 
 @router.post("/predict")
 async def predict(request: PredictRequest):
