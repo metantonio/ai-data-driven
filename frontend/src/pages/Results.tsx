@@ -61,6 +61,8 @@ export default function Results() {
                     if (update.data && update.data.code) {
                         setLatestCode(update.data.code);
                     }
+                } else if (update.status === 'error') {
+                    setStreamStatus(update.message);
                 } else if (update.status === 'success') {
                     setExecutionResult(update.data);
                     generateInsightsWrapper(update.data, schemaAnalysis);

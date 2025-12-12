@@ -3,6 +3,7 @@ import tempfile
 import os
 import json
 import sys
+import asyncio
 
 class ExecutorService:
     async def execute_code(self, code: str, schema_analysis: dict, llm_service):
