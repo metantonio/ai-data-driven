@@ -6,7 +6,7 @@ QLX AI Powered ML System is a demo web application that uses machine learning to
 
 ## Prerequisites
 - Python 3.11.6+
-- Node.js 18+
+- Node.js 24.11.1+
 
 ## 1. Start Support Services
 Open a terminal and run the backend:
