@@ -105,6 +105,7 @@ class CodeAdaptationAgent:
         2. Fix the code to resolve the error. Ensure imports are correct and data types are handled.
         3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)). 
         4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
+        4. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
         5. Output the full valid Python code.
         """
         

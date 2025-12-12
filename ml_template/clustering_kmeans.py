@@ -12,12 +12,30 @@ def load_data():
 def preprocess_data(df):
     return df
 
-# [PLACEHOLDER] Model Training
-def train_model(X):
-    # Default to 3 clusters, can be optimized or set by agent
-    model = KMeans(n_clusters=3, random_state=42, n_init=10)
-    model.fit(X)
-    return model
+def optimize_clusters(X, max_k=10):
+    best_score = -1
+    best_k = 2
+    best_model = None
+    
+    # Needs at least 2 samples to cluster
+    if len(X) < 2:
+        return 1, None
+        
+    limit = min(max_k, len(X))
+    
+    for k in range(2, limit + 1):
+        model = KMeans(n_clusters=k, random_state=42, n_init=10)
+        labels = model.fit_predict(X)
+        
+        # Silhouette requires > 1 unique label
+        if len(np.unique(labels)) > 1:
+            score = silhouette_score(X, labels)
+            if score > best_score:
+                best_score = score
+                best_k = k
+                best_model = model
+        
+    return best_k, best_model, best_score
 
 def main():
     try:
@@ -27,32 +45,31 @@ def main():
         # 2. Preprocess
         df_processed = preprocess_data(df)
         
-        # 3. Select Features (Clustering uses all selected features, no target)
-        # Ensure string column names
+        # 3. Select Features
         df_processed.columns = df_processed.columns.astype(str)
-        
         X = df_processed.select_dtypes(include=['number'])
         
         if X.empty:
             raise ValueError("No numeric data found for clustering.")
             
-        # 4. Train
-        model = train_model(X)
+        # 4. Train & Optimize (The "Agent" Logic)
+        print(f"Optimizing number of clusters (k=2..10)...")
+        best_k, model, score = optimize_clusters(X)
         
+        if model is None:
+             # Fallback if optimization failed (e.g. too little data)
+             model = KMeans(n_clusters=2, random_state=42).fit(X)
+             best_k = 2
+             score = -1.0
+             
         # 5. Evaluate
-        labels = model.labels_
-        # Silhouette score requires at least 2 clusters and > 1 sample
-        if len(set(labels)) > 1 and len(X) > 1:
-            sil_score = silhouette_score(X, labels)
-        else:
-            sil_score = -1.0
-            
         report = {
             "metrics": {
-                "silhouette_score": float(sil_score),
-                "n_clusters": int(model.n_clusters)
+                "silhouette_score": float(score),
+                "n_clusters": int(best_k),
+                "optimization_status": "optimized"
             },
-            "model_type": "K-Means Clustering",
+            "model_type": "K-Means Clustering (Auto-Optimized)",
             "features": list(X.columns),
             "cluster_centers": model.cluster_centers_.tolist()
         }
