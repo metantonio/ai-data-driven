@@ -32,6 +32,20 @@ export const analyzeSchema = async (connectionString: string, algorithmType: str
     return response.data;
 };
 
+export const getSchema = async (connectionString: string) => {
+    const response = await api.post('/get-schema', { connection_string: connectionString });
+    return response.data;
+};
+
+export const analyzeSchemaWithComments = async (connectionString: string, userComments: Record<string, any>, algorithmType: string) => {
+    const response = await api.post('/analyze-schema-with-comments', {
+        connection_string: connectionString,
+        user_comments: userComments,
+        algorithm_type: algorithmType
+    });
+    return response.data;
+};
+
 export const adaptCode = async (schemaAnalysis: SchemaAnalysis, algorithmType: string = "linear_regression"): Promise<{ code: string }> => {
     const response = await api.post('/adapt-code', { schema_analysis: schemaAnalysis, algorithm_type: algorithmType });
     return response.data;

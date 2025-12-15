@@ -52,6 +52,9 @@ class CodeAdaptationAgent:
         
         Dataset Analysis:
         {schema_analysis['analysis']}
+
+        User Comments (Context):
+        {schema_analysis.get('user_comments', 'None provided')}
         
         Raw Schema:
         {schema_analysis['raw_schema']}

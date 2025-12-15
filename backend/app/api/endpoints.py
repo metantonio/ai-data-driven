@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.services.llm_service import LLMService
 from app.agents.schema_analysis import SchemaAnalysisAgent
 from app.agents.code_adaptor import CodeAdaptationAgent
+from app.services.db_inspector import DatabaseInspector
 
 router = APIRouter()
 llm_service = LLMService()
@@ -21,6 +22,41 @@ async def analyze_schema_endpoint(request: AnalyzeRequest):
         agent = SchemaAnalysisAgent(llm_service)
         analysis = agent.analyze(request.connection_string, request.algorithm_type)
         return analysis
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class AnalyzeWithCommentsRequest(BaseModel):
+    connection_string: str
+    user_comments: dict
+    algorithm_type: str = "linear_regression"
+
+class GetSchemaRequest(BaseModel):
+    connection_string: str
+
+@router.post("/get-schema")
+def get_schema_endpoint(request: GetSchemaRequest):
+    try:
+        inspector = DatabaseInspector(request.connection_string)
+        return inspector.get_schema_summary()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/analyze-schema-with-comments")
+def analyze_schema_with_comments(request: AnalyzeWithCommentsRequest):
+    try:
+        agent = SchemaAnalysisAgent(llm_service)
+        analysis = agent.analyze_with_comments(
+            request.connection_string, 
+            request.user_comments, 
+            request.algorithm_type
+        )
+        return analysis
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

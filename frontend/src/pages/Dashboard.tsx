@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, ArrowRight, Loader } from 'lucide-react';
-import { analyzeSchema } from '../api/client';
+import { Database, ArrowRight, Loader, Settings } from 'lucide-react';
+import { analyzeSchema, getSchema } from '../api/client';
 
 export default function Dashboard() {
     const [connectionString, setConnectionString] = useState('');
     const [algorithmType, setAlgorithmType] = useState('linear_regression');
+    const [advancedAnalysis, setAdvancedAnalysis] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -23,8 +24,13 @@ export default function Dashboard() {
                 dbString = `sqlite:///${dbString}`;
             }
 
-            const data = await analyzeSchema(dbString, algorithmType);
-            navigate('/results', { state: { schemaAnalysis: data, connectionString: dbString, algorithmType } });
+            if (advancedAnalysis) {
+                const schema = await getSchema(dbString);
+                navigate('/advanced-analysis', { state: { schema, connectionString: dbString, algorithmType } });
+            } else {
+                const data = await analyzeSchema(dbString, algorithmType);
+                navigate('/results', { state: { schemaAnalysis: data, connectionString: dbString, algorithmType } });
+            }
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to analyze schema');
         } finally {
@@ -79,6 +85,30 @@ export default function Dashboard() {
                                     className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-100 placeholder-slate-600 transition-all font-mono text-sm"
                                 />
                             </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 bg-slate-900/30 p-3 rounded-xl border border-slate-700/50">
+                            <div className="relative flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="advancedAnalysis"
+                                    checked={advancedAnalysis}
+                                    onChange={(e) => setAdvancedAnalysis(e.target.checked)}
+                                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-600 bg-slate-900/50 transition-all checked:border-cyan-500 checked:bg-cyan-500 hover:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                                <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 peer-checked:opacity-100">
+                                    <ArrowRight className="h-3 w-3 text-white" />
+                                </div>
+                            </div>
+                            <label htmlFor="advancedAnalysis" className="flex-1 cursor-pointer select-none">
+                                <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                                    <Settings className="h-4 w-4 text-cyan-400" />
+                                    Advanced Analysis
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Manually annotation columns to improve AI Context
+                                </p>
+                            </label>
                         </div>
 
                         {error && (

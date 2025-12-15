@@ -3,6 +3,16 @@ from typing import Dict, Any, List
 
 class DatabaseInspector:
     def __init__(self, connection_string: str):
+        if connection_string.startswith("sqlite:///"):
+            path = connection_string.replace("sqlite:///", "")
+            # Only check if it's a file path (not :memory:)
+            if path != ":memory:":
+                import os
+                # Provide absolute path for clarity in error
+                abs_path = os.path.abspath(path)
+                if not os.path.exists(path):
+                    raise FileNotFoundError(f"Database file not found at: {abs_path}")
+                    
         self.engine = create_engine(connection_string)
         self.inspector = inspect(self.engine)
 
