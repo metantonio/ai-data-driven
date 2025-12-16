@@ -1,1 +1,0 @@
-Add the capability to connect to a database in the cloud, and run the pipeline on it. and different kind of database like SAp HANA
