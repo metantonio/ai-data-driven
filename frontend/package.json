@@ -10,12 +10,15 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@types/react-plotly.js": "^2.6.4",
         "axios": "^1.6.0",
         "lucide-react": "^0.290.0",
+        "plotly.js": "^3.3.1",
         "react": "^19.2.2",
         "react-dom": "^19.2.2",
         "react-is": "^19.2.3",
         "react-markdown": "^10.1.0",
+        "react-plotly.js": "^2.6.0",
         "react-router-dom": "^6.18.0",
         "recharts": "^3.5.1",
         "rehype-highlight": "^7.0.2"

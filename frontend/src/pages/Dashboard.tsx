@@ -141,9 +141,20 @@ export default function Dashboard() {
                         <p className="text-xs text-slate-500">
                             Supports PostgreSQL, SQLite, MySQL, and more via SQLAlchemy.
                         </p>
+
+                        <div className="pt-4 border-t border-slate-700/50 text-center">
+                            <button
+                                onClick={() => navigate('/eda')}
+                                className="text-cyan-400 hover:text-cyan-300 text-sm font-medium flex items-center justify-center gap-2 mx-auto transition-colors"
+                            >
+                                <Database className="h-4 w-4" />
+                                Try the New EDA Copilot
+                                <ArrowRight className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
