@@ -49,9 +49,7 @@ const EDAPage: React.FC = () => {
 
             const data = response.data;
             const artifactList: Artifact[] = [];
-            const toolCalls = data.tool_calls || [];
             const rawArtifacts = data.artifacts || {};
-            const lastTool = toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
 
             // Map artifacts from SimpleEDAService
             if (rawArtifacts) {
@@ -65,13 +63,16 @@ const EDAPage: React.FC = () => {
 
                 // Image artifacts (matplotlib plots)
                 if (rawArtifacts.bar_plot) {
-                    artifactList.push({ title: 'Missing Values', render_type: 'matplotlib', data: rawArtifacts.bar_plot });
+                    artifactList.push({ title: 'Chart', render_type: 'matplotlib', data: rawArtifacts.bar_plot });
                 }
                 if (rawArtifacts.heatmap_plot) {
                     artifactList.push({ title: 'Correlation Heatmap', render_type: 'matplotlib', data: rawArtifacts.heatmap_plot });
                 }
                 if (rawArtifacts.distribution_plot) {
                     artifactList.push({ title: 'Distributions', render_type: 'matplotlib', data: rawArtifacts.distribution_plot });
+                }
+                if (rawArtifacts.outlier_plot) {
+                    artifactList.push({ title: 'Outlier Detection', render_type: 'matplotlib', data: rawArtifacts.outlier_plot });
                 }
             }
 
@@ -235,7 +236,14 @@ const EDAPage: React.FC = () => {
 
                 {/* Example Questions */}
                 <div className="mt-3 flex flex-wrap gap-2 justify-center">
-                    {['Describe the dataset', 'Analyze missing data', 'Show correlations', 'Show first 10 rows'].map((q) => (
+                    {[
+                        'Describe the dataset',
+                        'Show column info',
+                        'Detect outliers',
+                        'Show correlations',
+                        'Show value counts',
+                        'Show unique values'
+                    ].map((q) => (
                         <button
                             key={q}
                             onClick={() => setInput(q)}

@@ -36,8 +36,20 @@ class SimpleEDAService:
             return self._analyze_correlations(df)
         elif any(word in query_lower for word in ['distribution', 'histogram', 'hist']):
             return self._analyze_distributions(df)
-        elif any(word in query_lower for word in ['first', 'head', 'sample', 'rows']):
+        elif any(word in query_lower for word in ['first', 'head', 'sample', 'rows']) and not 'all' in query_lower:
             return self._show_sample(df, query)
+        elif any(word in query_lower for word in ['all', 'entire', 'full', 'complete']) and any(word in query_lower for word in ['data', 'rows', 'dataset']):
+            return self._show_all_data(df)
+        elif any(word in query_lower for word in ['column', 'columns', 'field', 'fields', 'dtypes', 'types']):
+            return self._show_column_info(df)
+        elif any(word in query_lower for word in ['unique', 'distinct', 'values']):
+            return self._show_unique_values(df, query)
+        elif any(word in query_lower for word in ['outlier', 'anomal', 'extreme']):
+            return self._detect_outliers(df)
+        elif any(word in query_lower for word in ['count', 'frequency', 'frequencies']):
+            return self._show_value_counts(df, query)
+        elif any(word in query_lower for word in ['tail', 'last', 'bottom']):
+            return self._show_tail(df, query)
         else:
             # Default: provide overview
             return self._describe_dataset(df)
@@ -257,6 +269,276 @@ Showing first {n_rows} rows of the dataset.
         return {
             'ai_message': message,
             'tool_calls': ['show_sample'],
+            'artifacts': artifacts
+        }
+    
+    def _show_tail(self, df: pd.DataFrame, query: str) -> Dict[str, Any]:
+        """Show last rows from dataset."""
+        
+        import re
+        numbers = re.findall(r'\d+', query)
+        n_rows = int(numbers[0]) if numbers else 5
+        n_rows = min(n_rows, 20)
+        
+        tail_df = df.tail(n_rows).to_dict('records')
+        
+        message = f"""## Dataset Tail
+
+Showing last {n_rows} rows of the dataset.
+"""
+        
+        artifacts = {
+            'sample_df': tail_df
+        }
+        
+        return {
+            'ai_message': message,
+            'tool_calls': ['show_tail'],
+            'artifacts': artifacts
+        }
+    
+    def _show_all_data(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Show all data (with reasonable limit)."""
+        
+        max_rows = 100
+        n_rows = min(len(df), max_rows)
+        
+        if len(df) > max_rows:
+            message = f"""## Full Dataset (Limited)
+
+⚠️ Dataset has {len(df)} rows. Showing first {max_rows} rows for performance.
+"""
+        else:
+            message = f"""## Full Dataset
+
+Showing all {len(df)} rows.
+"""
+        
+        all_data = df.head(max_rows).to_dict('records')
+        
+        artifacts = {
+            'sample_df': all_data
+        }
+        
+        return {
+            'ai_message': message,
+            'tool_calls': ['show_all_data'],
+            'artifacts': artifacts
+        }
+    
+    def _show_column_info(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Show detailed column information."""
+        
+        col_info = []
+        for col in df.columns:
+            info = {
+                'Column': col,
+                'Type': str(df[col].dtype),
+                'Non-Null': df[col].count(),
+                'Null': df[col].isnull().sum(),
+                'Unique': df[col].nunique(),
+                'Sample': str(df[col].iloc[0]) if len(df) > 0 else 'N/A'
+            }
+            col_info.append(info)
+        
+        message = f"""## Column Information
+
+**Total Columns:** {len(df.columns)}
+
+**Data Types:**
+"""
+        
+        type_counts = df.dtypes.value_counts()
+        for dtype, count in type_counts.items():
+            message += f"\n- {dtype}: {count} columns"
+        
+        artifacts = {
+            'describe_df': col_info
+        }
+        
+        return {
+            'ai_message': message,
+            'tool_calls': ['show_column_info'],
+            'artifacts': artifacts
+        }
+    
+    def _show_unique_values(self, df: pd.DataFrame, query: str) -> Dict[str, Any]:
+        """Show unique values for categorical columns."""
+        
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        if not categorical_cols:
+            message = "⚠️ **No categorical columns found in the dataset.**"
+            return {
+                'ai_message': message,
+                'tool_calls': ['show_unique_values'],
+                'artifacts': {}
+            }
+        
+        message = f"""## Unique Values Analysis
+
+Analyzing {len(categorical_cols)} categorical columns.
+
+**Unique value counts:**
+"""
+        
+        unique_info = []
+        for col in categorical_cols[:10]:  # Limit to 10 columns
+            n_unique = df[col].nunique()
+            message += f"\n- **{col}**: {n_unique} unique values"
+            
+            # If few unique values, show them
+            if n_unique <= 10:
+                top_values = df[col].value_counts().head(10).to_dict()
+                unique_info.append({
+                    'Column': col,
+                    'Unique_Count': n_unique,
+                    'Top_Values': ', '.join([f"{k} ({v})" for k, v in list(top_values.items())[:5]])
+                })
+        
+        artifacts = {}
+        if unique_info:
+            artifacts['describe_df'] = unique_info
+        
+        return {
+            'ai_message': message,
+            'tool_calls': ['show_unique_values'],
+            'artifacts': artifacts
+        }
+    
+    def _detect_outliers(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Detect outliers using IQR method."""
+        
+        numeric_df = df.select_dtypes(include=[np.number])
+        
+        if numeric_df.shape[1] == 0:
+            message = "⚠️ **No numeric columns found for outlier detection.**"
+            return {
+                'ai_message': message,
+                'tool_calls': ['detect_outliers'],
+                'artifacts': {}
+            }
+        
+        outlier_info = []
+        message = f"""## Outlier Detection (IQR Method)
+
+Analyzing {numeric_df.shape[1]} numeric columns.
+
+**Outliers found:**
+"""
+        
+        for col in numeric_df.columns:
+            Q1 = numeric_df[col].quantile(0.25)
+            Q3 = numeric_df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            outliers = numeric_df[(numeric_df[col] < lower_bound) | (numeric_df[col] > upper_bound)][col]
+            n_outliers = len(outliers)
+            
+            if n_outliers > 0:
+                pct = (n_outliers / len(df) * 100)
+                message += f"\n- **{col}**: {n_outliers} outliers ({pct:.1f}%)"
+                outlier_info.append({
+                    'Column': col,
+                    'Outliers': n_outliers,
+                    'Percentage': f"{pct:.1f}%",
+                    'Lower_Bound': f"{lower_bound:.2f}",
+                    'Upper_Bound': f"{upper_bound:.2f}"
+                })
+        
+        if not outlier_info:
+            message += "\n\n✅ **No outliers detected in any numeric column.**"
+        
+        # Create boxplot
+        fig, axes = plt.subplots(1, min(4, numeric_df.shape[1]), figsize=(15, 5))
+        if numeric_df.shape[1] == 1:
+            axes = [axes]
+        
+        for idx, col in enumerate(numeric_df.columns[:4]):
+            axes[idx].boxplot(numeric_df[col].dropna(), vert=True)
+            axes[idx].set_title(col, color='#22d3ee')
+            axes[idx].set_facecolor('#0f172a')
+            axes[idx].tick_params(colors='#cbd5e1')
+        
+        fig.patch.set_facecolor('#0f172a')
+        fig.tight_layout()
+        
+        boxplot = self._fig_to_base64(fig)
+        plt.close(fig)
+        
+        artifacts = {
+            'outlier_plot': boxplot
+        }
+        
+        if outlier_info:
+            artifacts['describe_df'] = outlier_info
+        
+        return {
+            'ai_message': message,
+            'tool_calls': ['detect_outliers'],
+            'artifacts': artifacts
+        }
+    
+    def _show_value_counts(self, df: pd.DataFrame, query: str) -> Dict[str, Any]:
+        """Show value counts for categorical columns."""
+        
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        if not categorical_cols:
+            message = "⚠️ **No categorical columns found.**"
+            return {
+                'ai_message': message,
+                'tool_calls': ['show_value_counts'],
+                'artifacts': {}
+            }
+        
+        # Try to extract column name from query
+        target_col = None
+        for col in df.columns:
+            if col.lower() in query.lower():
+                target_col = col
+                break
+        
+        # If no specific column, use first categorical
+        if not target_col:
+            target_col = categorical_cols[0]
+        
+        value_counts = df[target_col].value_counts().head(20)
+        
+        message = f"""## Value Counts: {target_col}
+
+**Top {len(value_counts)} values:**
+"""
+        
+        for val, count in value_counts.items():
+            pct = (count / len(df) * 100)
+            message += f"\n- **{val}**: {count} ({pct:.1f}%)"
+        
+        # Create bar chart
+        fig, ax = plt.subplots(figsize=(10, 6))
+        value_counts.plot(kind='barh', ax=ax, color='#22d3ee')
+        ax.set_xlabel('Count')
+        ax.set_title(f'Value Counts: {target_col}')
+        ax.set_facecolor('#0f172a')
+        fig.patch.set_facecolor('#0f172a')
+        ax.tick_params(colors='#cbd5e1')
+        ax.xaxis.label.set_color('#cbd5e1')
+        ax.yaxis.label.set_color('#cbd5e1')
+        ax.title.set_color('#22d3ee')
+        
+        bar_plot = self._fig_to_base64(fig)
+        plt.close(fig)
+        
+        artifacts = {
+            'bar_plot': bar_plot,
+            'describe_df': [{'Value': str(k), 'Count': int(v), 'Percentage': f"{(v/len(df)*100):.1f}%"} for k, v in value_counts.items()]
+        }
+        
+        return {
+            'ai_message': message,
+            'tool_calls': ['show_value_counts'],
             'artifacts': artifacts
         }
     
