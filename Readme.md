@@ -12,6 +12,13 @@ QLX AI Powered ML System is a demo web application that uses machine learning to
 Open a terminal and run the backend:
 ```bash
 cd backend
+# Create and activate virtual environment
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux/Mac:
+# source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 # Set environment variables
@@ -30,9 +37,23 @@ npm install --legacy-peer-deps
 npm run dev
 ```
 
-## 3. End-to-End Test Scenario
+## 3. Database Connection Examples
+
+### SQLite (Default)
+`sqlite:///../example.db`
+`sqlite:///../example_casino.db`
+
+### SAP HANA
+`hana://user:password@host:port`
+- Ensure `hdbcli` and `sqlalchemy-hana` are installed (included in requirements.txt).
+- The port is typically 3xx15 where xx is the instance number (e.g., 30015 for instance 00).
+
+### PostgreSQL
+`postgresql://user:password@host:port/dbname`
+
+## 4. End-to-End Test Scenario
 1. Open Browser to `http://localhost:5173`.
-2. In the "Database Connection String" field, enter: `sqlite:///../example.db` or `sqlite:///../example_casino.db`.
+2. In the "Database Connection String" field, enter a valid string (see examples above).
    (Note: `example.db` was created in the root directory. The path is relative to where the backend runs. Since we run from `backend/`, we use `../example.db`. Alternatively, use absolute path).
 3. Click "Analyze Database".
 4. Monitor the "Pipeline Results" page:
