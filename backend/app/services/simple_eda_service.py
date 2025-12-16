@@ -50,13 +50,16 @@ class SimpleEDAService:
             for table in tables:
                 # Get row count for each table
                 try:
-                    row_count = engine.execute(f"SELECT COUNT(*) FROM {table}").scalar()
+                    from sqlalchemy import text
+                    with engine.connect() as conn:
+                        result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                        row_count = result.scalar()
                     message += f"\n- **{table}** ({row_count:,} rows)"
                     table_info.append({
                         'Table': table,
                         'Rows': f"{row_count:,}"
                     })
-                except:
+                except Exception as e:
                     message += f"\n- **{table}**"
                     table_info.append({
                         'Table': table,
