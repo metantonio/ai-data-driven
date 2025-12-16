@@ -70,6 +70,9 @@ class CodeAdaptationAgent:
            IMPORTANT: 
            - ALWAYS include Primary Key/Foreign Key columns (e.g., 'id', 'casino_id') for merging.
            - ALWAYS include ALL columns needed for features (e.g., 'city', 'state', 'type', 'gender') in the SELECT statement.
+           - If connection string starts with 'hana://', ensure to use sqlalchemy-hana dialect. 
+             Note: 'hdbcli' must be installed.
+           - For large datasets in Cloud DBs (Postgres/HANA), consider using 'LIMIT' for initial testing if not specified otherwise.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
            - Check if columns exist before applying operations like 'get_dummies' or 'drop'.
            - If a column is missing, print a warning but do not crash if possible, or fail explicitly with 'raise ValueError'.

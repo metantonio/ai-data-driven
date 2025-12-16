@@ -18,3 +18,6 @@ numpy==2.1.1
 matplotlib==3.9.2
 joblib==1.4.2
 pandas==2.2.2
+psycopg2-binary==2.9.9
+sqlalchemy-hana==1.1.0
+hdbcli==2.20.21

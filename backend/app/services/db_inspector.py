@@ -3,6 +3,9 @@ from typing import Dict, Any, List
 
 class DatabaseInspector:
     def __init__(self, connection_string: str):
+        self.engine = create_engine(connection_string)
+        
+        # SQLite specific validations
         if connection_string.startswith("sqlite:///"):
             path = connection_string.replace("sqlite:///", "")
             # Only check if it's a file path (not :memory:)
@@ -12,8 +15,15 @@ class DatabaseInspector:
                 abs_path = os.path.abspath(path)
                 if not os.path.exists(path):
                     raise FileNotFoundError(f"Database file not found at: {abs_path}")
-                    
-        self.engine = create_engine(connection_string)
+        
+        # Test connection immediately to fail fast
+        try:
+            with self.engine.connect() as conn:
+                pass
+        except Exception as e:
+            # Re-raise with clear context
+            raise ConnectionError(f"Failed to connect to database: {str(e)}")
+
         self.inspector = inspect(self.engine)
 
     def get_schema_summary(self) -> Dict[str, Any]:
