@@ -19,6 +19,66 @@ class SimpleEDAService:
     def __init__(self):
         # Set seaborn style
         sns.set_style("darkgrid")
+    
+    def show_available_tables(self, connection_string: str) -> Dict[str, Any]:
+        """
+        Show all available tables in the database.
+        """
+        from sqlalchemy import create_engine, inspect as sql_inspect
+        
+        try:
+            engine = create_engine(connection_string)
+            inspector = sql_inspect(engine)
+            tables = inspector.get_table_names()
+            
+            if not tables:
+                message = "⚠️ **No tables found in the database.**"
+                return {
+                    'ai_message': message,
+                    'tool_calls': ['show_tables'],
+                    'artifacts': {}
+                }
+            
+            message = f"""## Available Tables
+
+**Total Tables:** {len(tables)}
+
+**Table List:**
+"""
+            
+            table_info = []
+            for table in tables:
+                # Get row count for each table
+                try:
+                    row_count = engine.execute(f"SELECT COUNT(*) FROM {table}").scalar()
+                    message += f"\n- **{table}** ({row_count:,} rows)"
+                    table_info.append({
+                        'Table': table,
+                        'Rows': f"{row_count:,}"
+                    })
+                except:
+                    message += f"\n- **{table}**"
+                    table_info.append({
+                        'Table': table,
+                        'Rows': 'N/A'
+                    })
+            
+            artifacts = {
+                'describe_df': table_info
+            }
+            
+            return {
+                'ai_message': message,
+                'tool_calls': ['show_tables'],
+                'artifacts': artifacts
+            }
+            
+        except Exception as e:
+            return {
+                'ai_message': f"❌ **Error connecting to database:** {str(e)}",
+                'tool_calls': ['show_tables'],
+                'artifacts': {}
+            }
         
     def analyze_dataset(self, df: pd.DataFrame, query: str) -> Dict[str, Any]:
         """

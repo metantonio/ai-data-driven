@@ -26,6 +26,11 @@ async def chat_eda(request: EDARequest):
         # Initialize simple EDA service
         service = SimpleEDAService()
         
+        # Check if user wants to see available tables
+        if any(word in request.question.lower() for word in ['show tables', 'list tables', 'available tables', 'what tables']):
+            result = service.show_available_tables(request.connection_string)
+            return result
+        
         # Load Data
         df = load_data_from_db(request.connection_string, request.query)
         

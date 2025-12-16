@@ -234,24 +234,72 @@ const EDAPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Example Questions */}
-                <div className="mt-3 flex flex-wrap gap-2 justify-center">
-                    {[
-                        'Describe the dataset',
-                        'Show column info',
-                        'Detect outliers',
-                        'Show correlations',
-                        'Show value counts',
-                        'Show unique values'
-                    ].map((q) => (
-                        <button
-                            key={q}
-                            onClick={() => setInput(q)}
-                            className="text-xs px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700/50 transition-all"
-                        >
-                            {q}
-                        </button>
-                    ))}
+                {/* EDA Options */}
+                <div className="mt-4 space-y-3">
+                    <p className="text-xs text-slate-400 text-center font-medium">Available Analysis Options:</p>
+
+                    {/* Data Overview */}
+                    <div className="space-y-2">
+                        <p className="text-xs text-cyan-400 font-semibold ml-1">📊 Data Overview</p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                'Show tables',
+                                'Describe the dataset',
+                                'Show column info',
+                                'Show first 10 rows',
+                                'Show last 10 rows',
+                                'Show all data'
+                            ].map((q) => (
+                                <button
+                                    key={q}
+                                    onClick={() => setInput(q)}
+                                    className="text-xs px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700/50 transition-all"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Data Quality */}
+                    <div className="space-y-2">
+                        <p className="text-xs text-cyan-400 font-semibold ml-1">🔍 Data Quality</p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                'Analyze missing data',
+                                'Detect outliers',
+                                'Show unique values'
+                            ].map((q) => (
+                                <button
+                                    key={q}
+                                    onClick={() => setInput(q)}
+                                    className="text-xs px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700/50 transition-all"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Statistical Analysis */}
+                    <div className="space-y-2">
+                        <p className="text-xs text-cyan-400 font-semibold ml-1">📈 Statistical Analysis</p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                'Show correlations',
+                                'Show distributions',
+                                'Show value counts'
+                            ].map((q) => (
+                                <button
+                                    key={q}
+                                    onClick={() => setInput(q)}
+                                    className="text-xs px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700/50 transition-all"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
