@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import Plot from 'react-plotly.js';
-import { Database, Send, Loader, Sparkles } from 'lucide-react';
+import { Database, Send, Loader, Sparkles, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Artifact {
     title?: string;
@@ -18,6 +19,7 @@ interface Message {
 }
 
 const EDAPage: React.FC = () => {
+    const navigate = useNavigate();
     const [messages, setMessages] = useState<Message[]>([
         { role: 'ai', content: 'Hello! I\'m your EDA Copilot. Ask me to analyze your data, visualize patterns, or generate reports.' }
     ]);
@@ -155,7 +157,16 @@ const EDAPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col p-4">
             {/* Header */}
-            <div className="mb-6 text-center">
+            <div className="mb-6 text-center relative">
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate('/')}
+                    className="absolute left-0 top-0 flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700/50 transition-all"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="text-sm">Back</span>
+                </button>
+
                 <div className="flex items-center justify-center gap-3 mb-2">
                     <Sparkles className="h-8 w-8 text-cyan-400" />
                     <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
