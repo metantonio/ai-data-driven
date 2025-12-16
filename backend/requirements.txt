@@ -20,4 +20,4 @@ joblib==1.4.2
 pandas==2.2.2
 psycopg2-binary==2.9.9
 sqlalchemy-hana==1.1.0
-hdbcli==2.20.21
+hdbcli==2.26.26
