@@ -15,6 +15,12 @@ class EDARequest(BaseModel):
     connection_string: str
     query: Optional[str] = None
 
+class ReplyRequest(BaseModel):
+    question: str
+    connection_string: str
+    query: Optional[str] = None
+    context: str  # Previous question and response
+
 class EDAResponse(BaseModel):
     ai_message: str
     tool_calls: List[str]
@@ -43,6 +49,34 @@ async def chat_eda(request: EDARequest):
 
         # Process query with simple EDA
         result = service.analyze_dataset(df, request.question)
+        
+        return result
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/reply", response_model=EDAResponse)
+async def reply_eda(request: ReplyRequest):
+    """
+    Handle conversational follow-up questions with context.
+    """
+    try:
+        # Initialize simple EDA service
+        service = SimpleEDAService()
+        
+        # Load Data
+        df = load_data_from_db(request.connection_string, request.query)
+        
+        if df.empty:
+            return {
+                "ai_message": "The dataset loaded is empty.",
+                "tool_calls": [],
+                "artifacts": {}
+            }
+
+        # Generate conversational response with context
+        result = service.generate_reply(df, request.question, request.context)
         
         return result
 

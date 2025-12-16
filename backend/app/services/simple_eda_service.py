@@ -9,6 +9,8 @@ import io
 import base64
 from typing import Dict, Any, List
 import json
+from .llm_service import LLMService
+
 
 class SimpleEDAService:
     """
@@ -19,6 +21,110 @@ class SimpleEDAService:
     def __init__(self):
         # Set seaborn style
         sns.set_style("darkgrid")
+        
+        # Initialize Ollama API settings for context interpretation (optional)
+        import os
+        """ self.ollama_url = os.getenv("LLM_API_URL", "http://localhost:11434")
+        self.ollama_model = os.getenv("LLM_MODEL", "qwen2.5-coder:7b")
+        self.use_llm = os.getenv("LLM_PROVIDER", "ollama") == "ollama" """
+        self.llm = LLMService()
+        self.use_llm = self.llm.provider != "mock"
+    
+    def _call_llm(self, prompt: str) -> str:
+        """
+        Call the configured LLM via LLMService.
+        """
+        try:
+            print(f"[EDA] Calling LLMService with prompt length {len(prompt)}")
+            response = self.llm.generate_response(prompt)
+            print(f"[EDA] LLM response length: {len(response)}")
+            return response.strip()
+        except Exception as e:
+            print(f"[EDA] LLM error: {type(e).__name__}: {e}")
+            return ""
+    
+    def _call_ollama(self, prompt: str) -> str:
+        """
+        Call Ollama API directly without langchain.
+        """
+        import requests
+        
+        try:
+            print(f"[EDA] Calling Ollama at {self.ollama_url} with model {self.ollama_model}")
+            print(f"[EDA] Prompt length: {len(prompt)} characters")
+            
+            response = requests.post(
+                f"{self.ollama_url}",
+                json={
+                    "model": self.ollama_model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1
+                    }
+                },
+                timeout=30
+            )
+            
+            print(f"[EDA] Ollama response status: {response.status_code}")
+            response.raise_for_status()
+            
+            result = response.json()
+            generated_text = result.get("response", "").strip()
+            
+            print(f"[EDA] Generated response length: {len(generated_text)} characters")
+            print(f"[EDA] Generated response preview: {generated_text[:200]}...")
+            
+            return generated_text
+            
+        except requests.exceptions.ConnectionError as e:
+            print(f"[EDA] Connection error to Ollama: {e}")
+            print(f"[EDA] Make sure Ollama is running at {self.ollama_url}")
+            return ""
+        except requests.exceptions.Timeout as e:
+            print(f"[EDA] Timeout calling Ollama: {e}")
+            return ""
+        except requests.exceptions.HTTPError as e:
+            print(f"[EDA] HTTP error from Ollama: {e}")
+            print(f"[EDA] Response content: {e.response.text if hasattr(e, 'response') else 'N/A'}")
+            return ""
+        except Exception as e:
+            print(f"[EDA] Unexpected error calling Ollama: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            return ""
+    
+    def _interpret_question_with_context(self, question: str) -> str:
+        """
+        Use Ollama to interpret question with context and extract the actual intent.
+        Falls back to original question if Ollama is not available.
+        """
+        if not self.use_llm or not question.startswith("Context:"):
+            return question
+        
+        prompt = f"""You are helping interpret a user's follow-up question in a data analysis conversation.
+
+{question}
+
+Extract ONLY the actual data analysis task the user wants to perform. Respond with a single clear question or command that can be used for EDA analysis.
+
+Examples:
+- If user asks "Why is this correlation high?", respond: "explain correlation"
+- If user asks "Show me more details", respond: "show more details about the data"
+- If user asks "What about missing values?", respond: "analyze missing data"
+
+Respond with just the interpreted question, nothing else."""
+
+        interpreted = self._call_llm(prompt)
+        
+        if interpreted:
+            print(f"[EDA] Interpreted question: {interpreted}")
+            return interpreted
+        
+        # Fallback: extract the part after "Now the user asks:"
+        if "Now the user asks:" in question:
+            return question.split("Now the user asks:")[-1].strip()
+        return question
     
     def show_available_tables(self, connection_string: str) -> Dict[str, Any]:
         """
@@ -116,6 +222,56 @@ class SimpleEDAService:
         else:
             # Default: provide overview
             return self._describe_dataset(df)
+    
+    def generate_reply(self, df: pd.DataFrame, question: str, context: str) -> Dict[str, Any]:
+        """
+        Generate a conversational response using LLM based on the context and data.
+        This is used for follow-up questions via the /reply endpoint.
+        """
+        if not self.use_llm:
+            return {
+                'ai_message': "Conversational replies require LLM to be configured. Please set LLM_PROVIDER=ollama in your .env file.",
+                'tool_calls': ['reply'],
+                'artifacts': {}
+            }
+        
+        # Get basic dataset info for context
+        n_rows, n_cols = df.shape
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        # Create context for LLM
+        data_context = f"""Dataset Information:
+- Shape: {n_rows} rows × {n_cols} columns
+- Numeric columns: {', '.join(numeric_cols[:5])}
+- Categorical columns: {', '.join(categorical_cols[:5])}
+- Sample data (first 3 rows): {df.head(3).to_dict('records')}
+"""
+        
+        prompt = f"""You are an expert data analyst helping a user understand their data.
+
+Previous Context:
+{context}
+
+User's Follow-up Question:
+{question}
+
+{data_context}
+
+Provide a helpful, insightful response to the user's follow-up question. Be specific and reference actual values from the dataset when relevant. Keep your response concise (2-3 paragraphs max).
+
+If the question asks "why" or requests explanation, provide data-driven insights based on the statistics and patterns you can see."""
+
+        response_text = self._call_llm(prompt)
+        
+        if not response_text:
+            response_text = "I couldn't generate a detailed response. Try asking a more specific question or use one of the analysis options."
+        
+        return {
+            'ai_message': response_text,
+            'tool_calls': ['reply'],
+            'artifacts': {}
+        }
     
     def _describe_dataset(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Provide dataset description and statistics."""

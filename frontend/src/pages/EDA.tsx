@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import Plot from 'react-plotly.js';
-import { Database, Send, Loader, Sparkles, ArrowLeft } from 'lucide-react';
+import { Database, Send, Loader, Sparkles, ArrowLeft, Reply } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Artifact {
@@ -16,6 +16,7 @@ interface Message {
     role: 'user' | 'ai';
     content: string;
     artifacts?: Artifact[];
+    context?: string; // Original user question for this response
 }
 
 const EDAPage: React.FC = () => {
@@ -26,6 +27,7 @@ const EDAPage: React.FC = () => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [connectionString, setConnectionString] = useState('sqlite:///../example.db');
+    const [replyingTo, setReplyingTo] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -34,20 +36,51 @@ const EDAPage: React.FC = () => {
 
     useEffect(scrollToBottom, [messages]);
 
+    const handleReply = (messageIndex: number) => {
+        const message = messages[messageIndex];
+        if (message.role === 'ai' && message.context) {
+            setReplyingTo(messageIndex);
+            setInput('');
+            scrollToBottom();
+        }
+    };
+
     const handleSend = async () => {
         if (!input.trim()) return;
 
-        const userMessage: Message = { role: 'user', content: input };
+        const userMessage: Message = {
+            role: 'user',
+            content: input,
+            context: replyingTo !== null ? messages[replyingTo].context : undefined
+        };
         setMessages(prev => [...prev, userMessage]);
+
+        const currentInput = input;
+        const isReply = replyingTo !== null;
+        const replyContext = isReply && messages[replyingTo].context
+            ? `Previous question: "${messages[replyingTo].context}"\nPrevious response: "${messages[replyingTo].content.substring(0, 300)}..."`
+            : '';
+
         setInput('');
+        setReplyingTo(null);
         setLoading(true);
 
         try {
-            const response = await api.post('/eda/chat', {
-                question: input,
-                connection_string: connectionString,
-                model_name: "gpt-4-turbo"
-            });
+            // Use different endpoint for replies
+            const endpoint = isReply ? '/eda/reply' : '/eda/chat';
+            const payload = isReply
+                ? {
+                    question: currentInput,
+                    connection_string: connectionString,
+                    context: replyContext
+                }
+                : {
+                    question: currentInput,
+                    connection_string: connectionString,
+                    model_name: "gpt-4-turbo"
+                };
+
+            const response = await api.post(endpoint, payload);
 
             const data = response.data;
             const artifactList: Artifact[] = [];
@@ -81,7 +114,8 @@ const EDAPage: React.FC = () => {
             const aiMessage: Message = {
                 role: 'ai',
                 content: data.ai_message,
-                artifacts: artifactList
+                artifacts: artifactList,
+                context: currentInput // Store the original question for context
             };
 
             setMessages(prev => [...prev, aiMessage]);
@@ -209,6 +243,16 @@ const EDAPage: React.FC = () => {
                                     {msg.artifacts.map((art, aIdx) => renderArtifact(art, aIdx))}
                                 </div>
                             )}
+                            {/* Reply Button for AI messages */}
+                            {msg.role === 'ai' && msg.context && (
+                                <button
+                                    onClick={() => handleReply(idx)}
+                                    className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-cyan-400 rounded-lg text-xs transition-all border border-slate-600/50"
+                                >
+                                    <Reply className="h-3 w-3" />
+                                    Reply
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -225,6 +269,21 @@ const EDAPage: React.FC = () => {
 
             {/* Input Area */}
             <div className="max-w-4xl mx-auto w-full">
+                {/* Replying Indicator */}
+                {replyingTo !== null && (
+                    <div className="mb-2 px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <Reply className="h-3 w-3" />
+                            <span>Replying to: "{messages[replyingTo].context?.substring(0, 50)}..."</span>
+                        </div>
+                        <button
+                            onClick={() => setReplyingTo(null)}
+                            className="text-slate-500 hover:text-slate-300 text-xs"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
                 <div className="flex gap-2 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
                     <input
                         type="text"
