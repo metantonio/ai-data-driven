@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { adaptCode, executeCodeStream, generateInsights, ExecutionReport, predict } from '../api/client';
-import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2, Calculator } from 'lucide-react';
+import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2, Calculator, Copy, Download, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
@@ -112,6 +112,33 @@ function PredictionForm({ modelPath, features }: { modelPath: string, features: 
                 </form>
             </div>
         </div>
+    );
+}
+
+function CopyButton({ text, label }: { text: string, label?: string }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleCopy}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold border ${copied
+                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+                : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'
+                }`}
+        >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {label && <span>{copied ? 'Copied!' : label}</span>}
+        </button>
     );
 }
 
@@ -345,9 +372,30 @@ export default function Results() {
                     <div className="lg:col-span-2 space-y-8">
                         {/* Code Block */}
                         <div className={`space-y-4 transition-all duration-500 ${latestCode ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
-                            <div className="flex items-center gap-2 text-cyan-400">
-                                <Code className="h-5 w-5" />
-                                <h2 className="font-semibold text-lg">Adapted ML Code</h2>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-cyan-400">
+                                    <Code className="h-5 w-5" />
+                                    <h2 className="font-semibold text-lg">Adapted ML Code</h2>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <CopyButton text={latestCode} label="Copy" />
+                                    <button
+                                        onClick={() => {
+                                            const blob = new Blob([latestCode], { type: 'text/plain' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = 'pipeline.py';
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white text-xs font-semibold transition-all"
+                                        title="Download .py file"
+                                    >
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span>Download</span>
+                                    </button>
+                                </div>
                             </div>
                             <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs md:text-sm text-slate-300 overflow-x-auto h-96 custom-scrollbar">
                                 <pre>{latestCode || 'Waiting for adaptation...'}</pre>
@@ -356,9 +404,17 @@ export default function Results() {
 
                         {/* Execution Logs */}
                         <div className={`space-y-4 transition-all duration-500 delay-100 ${executionResult ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
-                            <div className="flex items-center gap-2 text-purple-400">
-                                <Play className="h-5 w-5" />
-                                <h2 className="font-semibold text-lg">Execution Output</h2>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-purple-400">
+                                    <Play className="h-5 w-5" />
+                                    <h2 className="font-semibold text-lg">Execution Output</h2>
+                                </div>
+                                {executionResult && (
+                                    <CopyButton
+                                        text={`STDOUT:\n${executionResult.stdout}\n\nSTDERR:\n${executionResult.stderr}`}
+                                        label="Copy Logs"
+                                    />
+                                )}
                             </div>
                             <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs md:text-sm text-slate-300 overflow-x-auto max-h-[280px] custom-scrollbar">
                                 {executionResult ? (
@@ -423,9 +479,12 @@ export default function Results() {
 
                     {/* Right Column (2/4 = 1/2): Insights */}
                     <div className={`lg:col-span-3 transition-all duration-500 delay-200 ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
-                        <div className="flex items-center gap-2 text-yellow-400 mb-4">
-                            <FileText className="h-6 w-6" />
-                            <h2 className="font-semibold text-2xl">AI-Generated Insights</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2 text-yellow-400">
+                                <FileText className="h-6 w-6" />
+                                <h2 className="font-semibold text-2xl">AI-Generated Insights</h2>
+                            </div>
+                            {insights && <CopyButton text={insights} label="Copy Report" />}
                         </div>
                         <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 text-slate-200 leading-relaxed shadow-xl backdrop-blur-sm max-h-[750px]" style={{ overflowY: 'auto' }}>
                             <div className="prose prose-invert prose-lg max-w-none">
