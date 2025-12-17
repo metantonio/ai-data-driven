@@ -101,8 +101,12 @@ export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpd
     }
 };
 
-export const generateInsights = async (executionReport: ExecutionReport, schemaAnalysis: SchemaAnalysis): Promise<{ insights: string }> => {
-    const response = await api.post('/generate-insights', { execution_report: executionReport, schema_analysis: schemaAnalysis });
+export const generateInsights = async (executionReport: ExecutionReport, schemaAnalysis: SchemaAnalysis, algorithmType: string): Promise<{ insights: string }> => {
+    const response = await api.post('/generate-insights', {
+        execution_report: executionReport,
+        schema_analysis: schemaAnalysis,
+        algorithm_type: algorithmType
+    });
     return response.data;
 };
 

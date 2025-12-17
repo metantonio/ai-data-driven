@@ -80,6 +80,7 @@ class ExecuteRequest(BaseModel):
 class InsightsRequest(BaseModel):
     execution_report: dict
     schema_analysis: dict
+    algorithm_type: str = "unknown"
 
 @router.post("/execute-code")
 async def execute_code_endpoint(request: ExecuteRequest):
@@ -100,7 +101,7 @@ async def execute_code_endpoint(request: ExecuteRequest):
 def generate_insights(request: InsightsRequest):
     try:
         agent = InsightsAgent(llm_service)
-        insights = agent.generate_insights(request.execution_report, request.schema_analysis)
+        insights = agent.generate_insights(request.execution_report, request.schema_analysis, request.algorithm_type)
         return {"insights": insights}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

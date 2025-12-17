@@ -52,6 +52,9 @@ class CodeAdaptationAgent:
         prompt = f"""
         You are a Machine Learning Engineer. Adapt the following Python ML template to work with the described dataset.
         
+        TARGET ALGORITHM TO IMPLEMENT: {algorithm_type.replace('_', ' ').upper()}
+        (IMPORTANT: Follow the user's latest selection even if the EDA analysis mentions a different initial choice).
+
         Dataset Analysis:
         {schema_analysis['analysis']}
 

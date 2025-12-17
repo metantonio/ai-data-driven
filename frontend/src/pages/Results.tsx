@@ -251,7 +251,7 @@ export default function Results() {
     const generateInsightsWrapper = async (execResult: any, analysis: any) => {
         if (execResult.report) {
             setStage('insight');
-            const insightRes = await generateInsights(execResult.report, analysis);
+            const insightRes = await generateInsights(execResult.report, analysis, algorithmType);
             setInsights(insightRes.insights);
             setStage('done');
 
@@ -276,19 +276,28 @@ export default function Results() {
             <div className="mx-auto space-y-8">
 
                 {/* Header */}
-                <div className="flex items-center gap-4 border-b border-slate-700/50 pb-6">
-                    <button onClick={() => navigate('/')} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
-                        <ChevronLeft className="h-6 w-6 text-slate-400" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold">Pipeline Results</h1>
-                        <p className="text-slate-400 flex items-center gap-2">
-                            {stage === 'done' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Loader className="h-4 w-4 animate-spin text-cyan-500" />}
-                            {stage === 'adapt' && 'Adapting code template...'}
-                            {stage === 'execute' && (streamStatus || 'Executing ML pipeline...')}
-                            {stage === 'insight' && 'Generating AI insights...'}
-                            {stage === 'done' && 'Pipeline execution complete'}
-                        </p>
+                <div className="flex items-center justify-between border-b border-slate-700/50 pb-6 mb-8">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/')} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                            <ChevronLeft className="h-6 w-6 text-slate-400" />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-bold">Pipeline Results</h1>
+                            <p className="text-slate-400 flex items-center gap-2">
+                                {stage === 'done' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Loader className="h-4 w-4 animate-spin text-cyan-500" />}
+                                {stage === 'adapt' && 'Adapting code template...'}
+                                {stage === 'execute' && (streamStatus || 'Executing ML pipeline...')}
+                                {stage === 'insight' && 'Generating AI insights...'}
+                                {stage === 'done' && 'Pipeline execution complete'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className="px-5 py-2 bg-slate-800/80 border border-slate-700/50 rounded-2xl flex flex-col items-end">
+                            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Target Algorithm</span>
+                            <span className="text-sm font-bold text-cyan-400">{algorithmType?.replace('_', ' ').toUpperCase()}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -367,7 +376,13 @@ export default function Results() {
                         {/* Metrics Card */}
                         {executionResult?.report && (
                             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-6 rounded-2xl shadow-lg space-y-6">
-                                <h2 className="text-lg font-semibold text-slate-200 border-b border-slate-700/50 pb-2">Model Metrics</h2>
+                                <div className="flex items-center justify-between border-b border-slate-700/50 pb-2">
+                                    <h2 className="text-lg font-semibold text-slate-200">Execution Report</h2>
+                                    <div className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase rounded border border-indigo-500/30">
+                                        {executionResult.report.model_type || 'Custom Model'}
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-4">
                                     {Object.entries(executionResult.report.metrics).map(([key, value]) => (
                                         <div key={key} className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
@@ -378,9 +393,9 @@ export default function Results() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="text-sm text-slate-400 flex flex-wrap gap-2">
-                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300">Target: {executionResult.report.target || 'N/A'}</span>
-                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300">Features: {executionResult.report.features?.length || 0}</span>
+                                <div className="text-sm text-slate-400 flex flex-wrap gap-2 pt-2 border-t border-slate-800">
+                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300 border border-white/5">Target: {executionResult.report.target || 'N/A'}</span>
+                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300 border border-white/5">Features: {executionResult.report.features?.length || 0}</span>
                                 </div>
                             </div>
                         )}

@@ -4,13 +4,15 @@ class InsightsAgent:
     def __init__(self, llm_service: LLMService):
         self.llm = llm_service
 
-    def generate_insights(self, execution_report: dict, schema_analysis: dict) -> str:
+    def generate_insights(self, execution_report: dict, schema_analysis: dict, model_type: str = "Unknown") -> str:
         """
         Generates a narrative report based on the execution metrics and schema context.
         """
         prompt = f"""
         You are a Data Analyst. Analyze the results of the Machine Learning model execution and provide a business-friendly report.
         
+        Selected Model Type: {model_type}
+
         Context (Schema):
         {schema_analysis['analysis']}
         
@@ -18,9 +20,9 @@ class InsightsAgent:
         {execution_report}
         
         Write a concise summary covering:
-        1. Whether the model performed well (interpret the metrics).
+        1. Whether the {model_type} model performed well (interpret the metrics specific to this algorithm).
         2. What this means for the data (business implications).
-        3. Recommendations for next steps.
+        3. Recommendations for next steps, and whether another approach might have been better.
         """
         
         insights = self.llm.generate_response(prompt)
