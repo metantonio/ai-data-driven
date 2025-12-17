@@ -1,0 +1,156 @@
+import pandas as pd
+import numpy as np
+import json
+import asyncio
+from typing import AsyncGenerator, Dict, Any, List
+from sqlalchemy import create_engine, inspect as sql_inspect
+from app.services.llm_service import LLMService
+from app.services.simple_eda_service import SimpleEDAService
+
+class AutomaticEDAAgent:
+    def __init__(self, llm_service: LLMService):
+        self.llm = llm_service
+        self.eda_service = SimpleEDAService()
+
+    async def run_analysis(self, connection_string: str, user_comments: Dict[str, Any], algorithm_type: str) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Runs a comprehensive EDA and yields progress updates.
+        """
+        try:
+            yield {"status": "info", "message": "Initializing AI EDA Agent...", "data": None}
+            
+            # 1. Load Data
+            yield {"status": "info", "message": "Loading data for analysis...", "data": None}
+            df = self._load_data(connection_string)
+            if df.empty:
+                yield {"status": "error", "message": "No data found for analysis.", "data": None}
+                return
+
+            yield {"status": "info", "message": f"Data loaded: {df.shape[0]} rows, {df.shape[1]} columns.", "data": {"shape": df.shape}}
+
+            # 2. General Statistics & "Self-Questions"
+            yield {"status": "step", "message": "Phase 1: General Data Statistics", "data": {"phase": "statistics"}}
+            stats = self.eda_service._describe_dataset(df)
+            
+            question_prompt = f"""
+            Based on these statistics: {json.dumps(stats['artifacts']['describe_df'][:5])}
+            And the target algorithm: {algorithm_type}
+            
+            What are 2 critical questions you should ask yourself about the data quality for this task?
+            Respond only with the 2 questions, one per line.
+            """
+            try:
+                questions_raw = self.llm.generate_response(question_prompt).strip()
+                questions = [q for q in questions_raw.split('\n') if q.strip()][:2]
+            except Exception as e:
+                print(f"LLM Error in Phase 1: {e}")
+                questions = ["What is the primary key and its distribution?", "Are there any obvious outliers in the features?"]
+            
+            if not questions:
+                questions = ["What is the primary key and its distribution?", "Are there any obvious outliers in the features?"]
+            
+            yield {
+                "status": "thought", 
+                "message": "AI self-questioning...", 
+                "data": {"thought": questions, "results": stats['ai_message']}
+            }
+            await asyncio.sleep(1) # Visual pacing
+
+            # 3. Missing Data Analysis
+            yield {"status": "step", "message": "Phase 2: Missing Data Patterns", "data": {"phase": "missing_data"}}
+            missing = self.eda_service._analyze_missing_data(df)
+            
+            insight_prompt = f"""
+            Missing Data Report: {missing['ai_message']}
+            Algorithm: {algorithm_type}
+            
+            As an AI Agent, what is your insight about how missing data affects the proposed {algorithm_type} model?
+            Keep it very concise.
+            """
+            try:
+                insight = self.llm.generate_response(insight_prompt).strip()
+            except Exception as e:
+                print(f"LLM Error in Phase 2: {e}")
+                insight = "Missing data might introduce bias. Consider imputation or removal of rows."
+                
+            if not insight:
+                insight = "Missing data might introduce bias. Consider imputation or removal of rows."
+
+            yield {
+                "status": "thought", 
+                "message": "Analyzing data gaps...", 
+                "data": {"thought": [insight], "results": missing['ai_message'], "visualization": missing['artifacts'].get('bar_plot')}
+            }
+            await asyncio.sleep(1)
+
+            # 4. Correlation Analysis
+            yield {"status": "step", "message": "Phase 3: Correlation & Feature Relationships", "data": {"phase": "correlation"}}
+            corrs = self.eda_service._analyze_correlations(df)
+            
+            corr_thought_prompt = f"""
+            Correlation Summary: {corrs['ai_message']}
+            Algorithm: {algorithm_type}
+            
+            What features seem most promising or problematic for {algorithm_type}?
+            """
+            try:
+                corr_thought = self.llm.generate_response(corr_thought_prompt).strip()
+            except Exception as e:
+                print(f"LLM Error in Phase 3: {e}")
+                corr_thought = "Standard correlation analysis shows some relationship between numeric variables."
+
+            if not corr_thought:
+                corr_thought = "Standard correlation analysis shows some relationship between numeric variables."
+
+            yield {
+                "status": "thought", 
+                "message": "Mapping feature relationships...", 
+                "data": {"thought": [corr_thought], "results": corrs['ai_message'], "visualization": corrs['artifacts'].get('heatmap_plot')}
+            }
+            await asyncio.sleep(1)
+
+            # 5. Suggested Models
+            yield {"status": "step", "message": "Phase 4: Optimization Suggestions", "data": {"phase": "suggestions"}}
+            
+            suggestion_prompt = f"""
+            You have analyzed the data. 
+            User wants to run: {algorithm_type}
+            User context: {json.dumps(user_comments)}
+            
+            Based on typical EDA findings (missing values, correlations, feature types), 
+            suggest 2 other ML models that might work well for this specific dataset.
+            Return a JSON list of objects: [{{"name": "Model Name", "reason": "Why?"}}]
+            """
+            try:
+                suggestions_raw = self.llm.generate_response(suggestion_prompt)
+                # Simple extraction of JSON if LLM adds markdown
+                if "```json" in suggestions_raw:
+                    suggestions_raw = suggestions_raw.split("```json")[1].split("```")[0].strip()
+                elif "```" in suggestions_raw:
+                    suggestions_raw = suggestions_raw.split("```")[1].split("```")[0].strip()
+                
+                suggestions = json.loads(suggestions_raw)
+            except:
+                suggestions = [{"name": "Random Forest", "reason": "Good baseline for most datasets"}, {"name": "XGBoost", "reason": "Efficient for tabular data"}]
+
+            yield {
+                "status": "success", 
+                "message": "Automatic EDA Complete!", 
+                "data": {"suggestions": suggestions}
+            }
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            yield {"status": "error", "message": f"AI Agent Analysis failed: {str(e)}", "data": None}
+
+    def _load_data(self, connection_string: str) -> pd.DataFrame:
+        engine = create_engine(connection_string)
+        inspector = sql_inspect(engine)
+        tables = inspector.get_table_names()
+        if not tables:
+            return pd.DataFrame()
+        
+        # Load a sample (1000 rows max) from the first table for EDA
+        table = tables[0]
+        return pd.read_sql(f"SELECT * FROM {table} LIMIT 1000", engine)

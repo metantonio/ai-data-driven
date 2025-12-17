@@ -4,6 +4,7 @@ from app.services.llm_service import LLMService
 from app.agents.schema_analysis import SchemaAnalysisAgent
 from app.agents.code_adaptor import CodeAdaptationAgent
 from app.services.db_inspector import DatabaseInspector
+from app.agents.automatic_eda import AutomaticEDAAgent
 
 router = APIRouter()
 llm_service = LLMService()
@@ -103,3 +104,24 @@ def generate_insights(request: InsightsRequest):
         return {"insights": insights}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class AutomaticEDARequest(BaseModel):
+    connection_string: str
+    user_comments: dict
+    algorithm_type: str
+
+@router.post("/automatic-eda")
+async def automatic_eda_endpoint(request: AutomaticEDARequest):
+    from fastapi.responses import StreamingResponse
+    import json
+
+    async def event_generator():
+        agent = AutomaticEDAAgent(llm_service)
+        async for update in agent.run_analysis(
+            request.connection_string, 
+            request.user_comments, 
+            request.algorithm_type
+        ):
+            yield json.dumps(update) + "\n"
+
+    return StreamingResponse(event_generator(), media_type="application/x-ndjson")

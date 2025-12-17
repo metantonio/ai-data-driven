@@ -32,7 +32,14 @@ export default function AdvancedAnalysis() {
         setError(null);
         try {
             const data = await analyzeSchemaWithComments(connectionString, comments, algorithmType);
-            navigate('/results', { state: { schemaAnalysis: data, connectionString, algorithmType } });
+            navigate('/eda-progress', {
+                state: {
+                    schemaAnalysis: data,
+                    connectionString,
+                    algorithmType,
+                    userComments: comments
+                }
+            });
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to analyze schema');
         } finally {

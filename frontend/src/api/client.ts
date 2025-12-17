@@ -110,3 +110,55 @@ export const predict = async (modelPath: string, features: any) => {
     const response = await api.post('/predict', { model_path: modelPath, features });
     return response.data;
 };
+
+export const runAutomaticEDAStream = async (
+    connectionString: string,
+    userComments: Record<string, any>,
+    algorithmType: string,
+    onUpdate: (data: any) => void,
+    signal?: AbortSignal
+) => {
+    const response = await fetch(`${API_BASE_URL}/automatic-eda`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            connection_string: connectionString,
+            user_comments: userComments,
+            algorithm_type: algorithmType
+        }),
+        signal
+    });
+
+    if (!response.ok) {
+        throw new Error(`EDA failed with status: ${response.status} ${response.statusText}`);
+    }
+
+    if (!response.body) return;
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+
+        for (let i = 0; i < lines.length - 1; i++) {
+            const line = lines[i].trim();
+            if (line) {
+                try {
+                    const data = JSON.parse(line);
+                    onUpdate(data);
+                } catch (e) {
+                    console.error("Error parsing stream line:", line, e);
+                }
+            }
+        }
+        buffer = lines[lines.length - 1];
+    }
+};
