@@ -344,13 +344,13 @@ export default function Results() {
                     {/* Left Column (1/4): Code & Execution Logs */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Code Block */}
-                        <div className={`space-y-4 transition-all duration-500 ${adaptedCode ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                        <div className={`space-y-4 transition-all duration-500 ${latestCode ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
                             <div className="flex items-center gap-2 text-cyan-400">
                                 <Code className="h-5 w-5" />
                                 <h2 className="font-semibold text-lg">Adapted ML Code</h2>
                             </div>
                             <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs md:text-sm text-slate-300 overflow-x-auto h-96 custom-scrollbar">
-                                <pre>{adaptedCode || 'Waiting for adaptation...'}</pre>
+                                <pre>{latestCode || 'Waiting for adaptation...'}</pre>
                             </div>
                         </div>
 
