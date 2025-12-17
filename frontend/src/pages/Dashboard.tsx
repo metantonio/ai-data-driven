@@ -68,6 +68,8 @@ export default function Dashboard() {
                                 <option value="reinforcement_learning">Reinforcement Learning</option>
                                 <option value="linear_programming">Linear Programming (Optimization)</option>
                                 <option value="mixed_integer_programming">Mixed Integer Programming</option>
+                                <option value="random_forest">Random Forest</option>
+                                <option value="decision_tree">Decision Tree</option>
                             </select>
                         </div>
 

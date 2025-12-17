@@ -199,6 +199,7 @@ export default function Results() {
                     }
                 } else if (update.status === 'success') {
                     finalStateReached = true;
+                    setAiErrorSummary(null); // Clear any intermediate error summary on success
                     setExecutionResult(update.data);
                     generateInsightsWrapper(update.data, schemaAnalysis);
                 } else if (update.status === 'final_error') {
@@ -301,7 +302,7 @@ export default function Results() {
                     </div>
                 </div>
 
-                {(error || aiErrorSummary) && (
+                {(error || aiErrorSummary) && !executionResult?.report && (
                     <div className="p-6 bg-red-900/20 border border-red-500/50 rounded-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-start gap-4">
                             <div className="p-3 bg-red-500/20 rounded-xl">
