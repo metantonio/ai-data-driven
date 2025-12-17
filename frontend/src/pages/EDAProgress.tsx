@@ -20,6 +20,7 @@ export default function EDAProgress() {
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [isComplete, setIsComplete] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>(algorithmType);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
@@ -71,7 +72,13 @@ export default function EDAProgress() {
     };
 
     const handleProceed = () => {
-        navigate('/results', { state: { schemaAnalysis, connectionString, algorithmType } });
+        navigate('/results', {
+            state: {
+                schemaAnalysis,
+                connectionString,
+                algorithmType: selectedAlgorithm
+            }
+        });
     };
 
     return (
@@ -169,8 +176,22 @@ export default function EDAProgress() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {suggestions.map((s, i) => (
-                                    <div key={i} className="bg-slate-900/50 border border-slate-700 p-5 rounded-xl hover:border-emerald-500/50 transition-colors cursor-help group">
-                                        <h3 className="font-bold text-emerald-400 mb-2 group-hover:translate-x-1 transition-transform">{s.name}</h3>
+                                    <div
+                                        key={i}
+                                        onClick={() => setSelectedAlgorithm(s.name)}
+                                        className={`p-5 rounded-xl transition-all cursor-pointer group border-2 ${selectedAlgorithm === s.name
+                                                ? 'bg-emerald-500/20 border-emerald-500 shadow-lg shadow-emerald-500/10'
+                                                : 'bg-slate-900/50 border-slate-700 hover:border-emerald-500/50'
+                                            }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-emerald-400 group-hover:translate-x-1 transition-transform">
+                                                {s.display_name || s.name}
+                                            </h3>
+                                            {selectedAlgorithm === s.name && (
+                                                <CheckCircle className="h-5 w-5 text-emerald-400 animate-in zoom-in duration-300" />
+                                            )}
+                                        </div>
                                         <p className="text-sm text-slate-400 leading-relaxed">{s.reason}</p>
                                     </div>
                                 ))}
@@ -200,7 +221,7 @@ export default function EDAProgress() {
                             }`}
                         disabled={!isComplete}
                     >
-                        {isComplete ? 'Continue to Model Execution' : 'Analyzing Data...'}
+                        {isComplete ? `Run ${selectedAlgorithm.replace('_', ' ')}` : 'Analyzing Data...'}
                         <ArrowRight className={`h-5 w-5 transition-transform ${isComplete ? 'group-hover:translate-x-1' : ''}`} />
                     </button>
                 </div>

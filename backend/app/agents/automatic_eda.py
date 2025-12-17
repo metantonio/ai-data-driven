@@ -112,26 +112,47 @@ class AutomaticEDAAgent:
             # 5. Suggested Models
             yield {"status": "step", "message": "Phase 4: Optimization Suggestions", "data": {"phase": "suggestions"}}
             
+            available_models = [
+                "linear_regression", "logistic_regression", "kmeans", "hierarchical", 
+                "time_series", "linear_programming", "mixed_integer_programming", 
+                "reinforcement_learning", "association_rules", "random_forest", "decision_tree"
+            ]
+
             suggestion_prompt = f"""
             You have analyzed the data. 
-            User wants to run: {algorithm_type}
+            User current choice: {algorithm_type}
             User context: {json.dumps(user_comments)}
             
-            Based on typical EDA findings (missing values, correlations, feature types), 
-            suggest 2 other ML models that might work well for this specific dataset.
-            Return a JSON list of objects: [{{"name": "Model Name", "reason": "Why?"}}]
+            Available ML models in our system: {', '.join(available_models)}
+
+            Based on your EDA findings, suggest 2 other models from the 'Available ML models' list that might work better or complement the current choice.
+            
+            Return a JSON list of objects: 
+            [
+              {{
+                "name": "Model technical name (must be one from the available list)", 
+                "display_name": "Human readable name",
+                "reason": "Why this model specifically given the data?"
+              }}
+            ]
             """
             try:
                 suggestions_raw = self.llm.generate_response(suggestion_prompt)
-                # Simple extraction of JSON if LLM adds markdown
                 if "```json" in suggestions_raw:
                     suggestions_raw = suggestions_raw.split("```json")[1].split("```")[0].strip()
                 elif "```" in suggestions_raw:
                     suggestions_raw = suggestions_raw.split("```")[1].split("```")[0].strip()
                 
                 suggestions = json.loads(suggestions_raw)
+                # Ensure s is a dict and has 'name' in available_models
+                suggestions = [s for s in suggestions if isinstance(s, dict) and s.get('name') in available_models]
+                if not suggestions:
+                    raise ValueError("No valid suggestions in available models.")
             except:
-                suggestions = [{"name": "Random Forest", "reason": "Good baseline for most datasets"}, {"name": "XGBoost", "reason": "Efficient for tabular data"}]
+                suggestions = [
+                    {"name": "random_forest", "display_name": "Random Forest", "reason": "Good baseline for most datasets"}, 
+                    {"name": "decision_tree", "display_name": "Decision Tree", "reason": "Explainable model for tabular data"}
+                ]
 
             yield {
                 "status": "success", 

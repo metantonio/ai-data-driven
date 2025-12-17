@@ -17,7 +17,9 @@ class CodeAdaptationAgent:
             "linear_programming": "linear_programming.py",
             "mixed_integer_programming": "mixed_integer_programming.py",
             "reinforcement_learning": "reinforcement_learning.py",
-            "association_rules": "association_rules.py"
+            "association_rules": "association_rules.py",
+            "random_forest": "random_forest.py",
+            "decision_tree": "decision_tree.py"
         }
         
         filename = template_map.get(algorithm_type, "linear_regression.py")
