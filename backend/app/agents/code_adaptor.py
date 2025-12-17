@@ -102,12 +102,15 @@ class CodeAdaptationAgent:
         # Let's try to remove any leading/trailing whitespace at least.
         return adapted_code.strip()
 
-    def fix_code(self, original_code: str, error_msg: str, schema_analysis: dict) -> str:
+    def fix_code(self, original_code: str, error_msg: str, schema_analysis: dict, error_summary: str = None) -> str:
+        summary_section = f"\nAI Error Analysis:\n{error_summary}\n" if error_summary else ""
+        
         prompt = f"""
         You are a Machine Learning Engineer. The following Python code failed to execute. Fix it.
         
         Error Message:
         {error_msg}
+        {summary_section}
         
         Original Code:
         {original_code}
@@ -119,12 +122,12 @@ class CodeAdaptationAgent:
          {schema_analysis.get('raw_schema', '')}
         
         tasks:
-        1. Analyze the error and the code.
+        1. Analyze the error, the AI summary (if provided), and the code.
         2. Fix the code to resolve the error. Ensure imports are correct and data types are handled.
         3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)). 
         4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
         5. IF error is related to missing columns/tables: STRICTLY check the 'Raw Schema' provided above and use the exact column names found there.
-           - NOTE: 'casinos' table usually has 'id', not 'casino_id'. 'games' table has 'casino_id'. Check your merge keys carefully.
+           - NOTE: 'casinos' table usually has 'id', not 'casino_id'. 'games' table has 'id', not 'game_id'. Check your merge keys carefully.
         6. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
         7. IGNORE DeprecationWarnings or FutureWarnings unless they are the direct cause of the crash. Focus on the 'Traceback' and the final 'Exception'.
         8. CRITICAL: DO NOT wrap the code in a `try-except` block that prints an error and continues or exits with 0. Let the script crash with a traceback, or use `traceback.print_exc(); exit(1)` if you must catch it. The system needs a non-zero exit code to know it failed.

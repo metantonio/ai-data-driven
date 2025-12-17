@@ -127,6 +127,7 @@ export default function Results() {
     const [executionResult, setExecutionResult] = useState<{ stdout: string; stderr: string; report: ExecutionReport | null } | null>(null);
     const [insights, setInsights] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+    const [aiErrorSummary, setAiErrorSummary] = useState<string | null>(null);
     const [latestCode, setLatestCode] = useState<string>('');
 
     // Ref for abort controller
@@ -177,6 +178,7 @@ export default function Results() {
             setAdaptedCode(code!);
             setLatestCode(code!);
             setError(null);
+            setAiErrorSummary(null);
 
             setStage('execute');
 
@@ -192,16 +194,28 @@ export default function Results() {
                     }
                 } else if (update.status === 'error') {
                     setStreamStatus(update.message);
+                    if (update.data?.is_ai_summary) {
+                        setAiErrorSummary(update.message);
+                    }
                 } else if (update.status === 'success') {
                     finalStateReached = true;
-                    // If we have a cached execution result but this is a new run, update it
                     setExecutionResult(update.data);
                     generateInsightsWrapper(update.data, schemaAnalysis);
                 } else if (update.status === 'final_error') {
                     finalStateReached = true;
                     setError(update.message);
+                    if (update.data?.error_summary) {
+                        setAiErrorSummary(update.data.error_summary);
+                    }
                     if (update.data && update.data.code) {
                         setLatestCode(update.data.code);
+                    }
+                    if (update.data && (update.data.stdout || update.data.stderr)) {
+                        setExecutionResult({
+                            stdout: update.data.stdout || '',
+                            stderr: update.data.stderr || '',
+                            report: null
+                        });
                     }
                     setStage('done');
                 }
@@ -278,24 +292,40 @@ export default function Results() {
                     </div>
                 </div>
 
-                {error && (
-                    <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-start gap-3">
-                        <AlertTriangle className="h-6 w-6 text-red-400 mt-0.5" />
-                        <div>
-                            <h3 className="font-bold text-red-200">Processing Error</h3>
-                            <p className="text-red-300/80 text-sm mt-1">{error}</p>
+                {(error || aiErrorSummary) && (
+                    <div className="p-6 bg-red-900/20 border border-red-500/50 rounded-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-red-500/20 rounded-xl">
+                                <AlertTriangle className="h-6 w-6 text-red-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-xl font-bold text-red-200">
+                                    {error === 'Max retries reached. Execution failed.' ? 'Automated Fixing Failed' : 'Pipeline Execution Error'}
+                                </h3>
+                                <div className="mt-3 text-red-300/90 leading-relaxed bg-red-950/30 p-4 rounded-xl border border-red-500/10">
+                                    {aiErrorSummary || error}
+                                </div>
 
-                            {/* Retry Button */}
-                            {stage === 'done' && error === 'Max retries reached. Execution failed.' && (
+                                {error && aiErrorSummary && error !== aiErrorSummary && (
+                                    <p className="text-red-400/60 text-xs mt-3 italic">
+                                        System Status: {error}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Retry Button */}
+                        {stage === 'done' && (error === 'Max retries reached. Execution failed.' || error?.includes('Max retries')) && (
+                            <div className="flex justify-end mt-2 pt-4 border-t border-red-500/10">
                                 <button
                                     onClick={handleRetry}
-                                    className="mt-4 bg-red-500/20 hover:bg-red-500/40 text-red-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-500/50 flex items-center gap-2"
+                                    className="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-900/40 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
                                 >
-                                    <Play className="h-4 w-4" />
-                                    Continue Fixing (Try 3 more attempts)
+                                    <Play className="h-4 w-4 fill-current" />
+                                    Force 3 More Fix Attempts
                                 </button>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
