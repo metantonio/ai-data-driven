@@ -45,7 +45,7 @@ def get_settings():
         "LLM_PROVIDER": os.getenv("LLM_PROVIDER", "ollama"),
         "LLM_API_URL": os.getenv("LLM_API_URL", "http://localhost:11434/api/generate"),
         "LLM_MODEL": os.getenv("LLM_MODEL", "qwen2.5-coder:7b"),
-        "DATABASE_URL": os.getenv("DATABASE_URL", "sqlite:///../data/data.db"),
+        "DATABASE_URL": os.getenv("DATABASE_URL", "sqlite:///../example.db"),
         "LLM_API_KEY": os.getenv("LLM_API_KEY", "mock"),
     }
 

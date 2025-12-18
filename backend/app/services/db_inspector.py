@@ -3,18 +3,43 @@ from typing import Dict, Any, List
 
 class DatabaseInspector:
     def __init__(self, connection_string: str):
-        self.engine = create_engine(connection_string)
-        
-        # SQLite specific validations
+        import os
+        import sys
+        from pathlib import Path
+
+        # 1. Path Robustness for SQLite
         if connection_string.startswith("sqlite:///"):
-            path = connection_string.replace("sqlite:///", "")
-            # Only check if it's a file path (not :memory:)
-            if path != ":memory:":
-                import os
-                # Provide absolute path for clarity in error
-                abs_path = os.path.abspath(path)
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"Database file not found at: {abs_path}")
+            original_path = connection_string.replace("sqlite:///", "")
+            
+            if original_path != ":memory:":
+                # Try to resolve the path
+                path_to_check = Path(original_path)
+                
+                # If path doesn't exist, try common alternatives (like ../../ in .exe)
+                if not path_to_check.exists():
+                    alternatives = []
+                    # If frozen, the execution context is different
+                    if getattr(sys, 'frozen', False):
+                        # The .exe is in backend/dist/, so ../../ might be the project root
+                        alternatives.append(Path(sys.executable).parent / ".." / ".." / original_path.replace("../", ""))
+                        alternatives.append(Path(sys.executable).parent / original_path)
+                    
+                    # Also try relative to current working directory
+                    alternatives.append(Path(os.getcwd()) / original_path)
+                    
+                    for alt in alternatives:
+                        if alt.exists():
+                            path_to_check = alt
+                            connection_string = f"sqlite:///{alt.absolute()}"
+                            print(f"Database found at alternative path: {alt}")
+                            break
+                
+                # Final check
+                if not path_to_check.exists():
+                    abs_path = os.path.abspath(original_path)
+                    raise FileNotFoundError(f"Database file not found. Original: {original_path}, Absolute: {abs_path}")
+
+        self.engine = create_engine(connection_string)
         
         # Test connection immediately to fail fast
         try:

@@ -1,5 +1,8 @@
 from app.services.llm_service import LLMService
 import os
+import sys
+import re
+from pathlib import Path
 
 class CodeAdaptationAgent:
     def __init__(self, llm_service: LLMService, template_path: str = None):
@@ -26,25 +29,28 @@ class CodeAdaptationAgent:
         
         # Load Template
         try:
-            # Try specific path if set, else look in standard locations with filename
+            # 1. Determine the base path for templates
+            base_dir = getattr(sys, '_MEIPASS', os.getcwd())
+            
+            # 2. Strategy: Try specific path, then relative, then bundled path
             if self.template_path:
                 path = self.template_path
             else:
-                # Default relative lookups
-                path = f"../ml_template/{filename}"
+                # Bundle path (PyInstaller) or Development path
+                # When bundled, it's at 'ml_template' in the root of _MEIPASS
+                bundled_path = os.path.join(base_dir, "ml_template", filename)
+                # Development path relative to this file
+                dev_path = os.path.join(os.path.dirname(__file__), "../../../ml_template", filename)
                 
+                if os.path.exists(bundled_path):
+                    path = bundled_path
+                else:
+                    path = dev_path
+
             with open(path, 'r') as f:
                 template_code = f.read()
         except FileNotFoundError:
-            # Fallback relative to this file
-            import os
-            base_dir = os.path.dirname(__file__)
-            path = os.path.join(base_dir, f"../../../ml_template/{filename}")
-            try:
-                with open(path, 'r') as f:
-                    template_code = f.read()
-            except FileNotFoundError:
-                return f"# Error: Could not find template for {algorithm_type} at {path}"
+             return f"# Error: Could not find template for {algorithm_type} at {path}. Current Dir: {os.getcwd()}, Base Dir: {base_dir}"
 
         # 2. Prompt LLM to fill placeholders
         connection_string = schema_analysis.get('connection_string', 'sqlite:///../example.db')

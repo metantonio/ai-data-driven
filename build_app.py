@@ -46,6 +46,8 @@ def build_app():
         "--collect-all pydantic "
         "--add-data \"static;static\" "
         "--add-data \"app;app\" "
+        "--add-data \"../ml_template;ml_template\" "
+        "--add-data \"../pipeline.py;.\" "
         "--name \"QLX-AI-Data-Science-App\" "
         "server.py"
     )
