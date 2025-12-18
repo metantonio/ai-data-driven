@@ -19,7 +19,7 @@ from app.api import endpoints, predict, eda, settings
 app.include_router(endpoints.router, prefix="/api")
 app.include_router(predict.router, prefix="/api")
 app.include_router(eda.router, prefix="/api/eda")
-app.include_router(settings.router, prefix="/api/settings")
+app.include_router(settings.router, prefix="/api")
 
 # Serve static files in production
 # The 'static' folder should contain the contents of the frontend 'dist' folder

@@ -38,7 +38,7 @@ class Settings(BaseModel):
     DATABASE_URL: str
     LLM_API_KEY: str = "mock"
 
-@router.get("/")
+@router.get("/settings")
 def get_settings():
     load_dotenv(dotenv_path=ENV_PATH, override=True)
     return {
@@ -49,7 +49,7 @@ def get_settings():
         "LLM_API_KEY": os.getenv("LLM_API_KEY", "mock"),
     }
 
-@router.post("/")
+@router.post("/settings")
 def update_settings(settings: Settings):
     try:
         # Create .env if it doesn't exist
@@ -71,7 +71,7 @@ def update_settings(settings: Settings):
         print(f"Error updating .env: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
 
-@router.post("/shutdown")
+@router.post("/settings/shutdown")
 def shutdown():
     """Shuts down the application server."""
     print("Shutdown requested...")
