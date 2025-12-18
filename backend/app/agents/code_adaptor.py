@@ -82,7 +82,7 @@ class CodeAdaptationAgent:
         Tasks:
         1. Implement 'load_data' to connect to the DB using the provided Connection String exactly. Use sqlalchemy. 
            IMPORTANT: 
-           - ALWAYS include Primary Key/Foreign Key columns (e.g., 'id', 'casino_id') for merging.
+           - ALWAYS include Primary Key/Foreign Key columns (e.g., 'id', or any linking columns found in the schema) for merging.
            - ALWAYS include ALL columns needed for features (e.g., 'city', 'state', 'type', 'gender') in the SELECT statement.
            - If connection string starts with 'hana://', ensure to use sqlalchemy-hana dialect. 
              Note: 'hdbcli' must be installed.
@@ -142,7 +142,7 @@ class CodeAdaptationAgent:
            - NOTE: 'casinos' table usually has 'id', not 'casino_id'. 'games' table has 'id', not 'game_id'. Check your merge keys carefully.
         6. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
         7. IGNORE DeprecationWarnings or FutureWarnings unless they are the direct cause of the crash. Focus on the 'Traceback' and the final 'Exception'.
-        8. CRITICAL: DO NOT wrap the code in a `try-except` block that prints an error and continues or exits with 0. Let the script crash with a traceback, or use `traceback.print_exc(); exit(1)` if you must catch it. The system needs a non-zero exit code to know it failed.
+        8. CRITICAL: DO NOT wrap the code in a `try-except` block that prints an error and continues or exits with 0. Let the script crash with a traceback, or use `traceback.print_exc(); sys.exit(1)` if you must catch it. The system needs a non-zero exit code to know it failed.
         9. IMPORTANT: If the error is regarding 'OneHotEncoder' and 'sparse', replace `sparse=False` with `sparse_output=False`.
         10. IF the error is "Classification metrics can't handle a mix of continuous and binary targets", it means you are using a Classifier on a Regression target. Fix this by converting the target variable `y` to binary (e.g., `y = (y > y.mean()).astype(int)`) or using a Regressor instead.
         11. Output the full valid Python code.

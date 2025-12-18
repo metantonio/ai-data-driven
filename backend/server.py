@@ -51,6 +51,13 @@ if __name__ == "__main__":
     # This prevents port conflicts when the executor runs generated code in frozen mode
     if len(sys.argv) > 1 and sys.argv[1].endswith(".py"):
         import runpy
+        import builtins
+        # Inject exit/quit if they don't exist (common in frozen apps and runpy environments)
+        if not hasattr(builtins, 'exit'):
+            builtins.exit = sys.exit
+        if not hasattr(builtins, 'quit'):
+            builtins.quit = sys.exit
+            
         script_path = sys.argv[1]
         print(f"Executing script: {script_path}")
         try:

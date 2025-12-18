@@ -69,7 +69,7 @@ def main():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        exit(1)
+        import sys; sys.exit(1)
 
 if __name__ == "__main__":
     main()

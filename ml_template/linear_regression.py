@@ -84,7 +84,7 @@ def main():
         import traceback
         traceback.print_exc()
         # Ensure we exit with non-zero code if it fails, allowing backend to catch it
-        exit(1)
+        import sys; sys.exit(1)
 
 if __name__ == "__main__":
     main()
