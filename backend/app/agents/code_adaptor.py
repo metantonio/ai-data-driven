@@ -89,8 +89,8 @@ class CodeAdaptationAgent:
            - For large datasets in Cloud DBs (Postgres/HANA), consider using 'LIMIT' for initial testing if not specified otherwise.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
            - CRITICAL: DO NOT hallucinate column names. ONLY use columns explicitly listed in the schema provided for each table.
-           - DO NOT assume columns like 'loyalty_tier', 'member_status', 'casino_id', or 'player_name' exist unless you see them in the specific table schema.
-           - Check `df.columns` before dropping or selecting. If the target column or any feature is missing, raise a clear ValueError or print a diagnostic before crash.
+           - DO NOT assume columns like 'loyalty_tier', 'member_status', 'casino_id', 'player_name', or 'tier' exist unless you see them in the specific table schema.
+           - Check `df.columns` before dropping, selecting, or using them in logic. If any target or feature column is missing, fail with a clear diagnostic.
            - IF you need to merge tables, identify the correct keys from THE PROVIDED SCHEMA. DO NOT assume junction columns exist unless visible.
            - DO NOT use `df[col] = pd.get_dummies(df[col])`. This will error if there are multiple categories. 
            - INSTEAD: Use `df = pd.get_dummies(df, columns=[col1, col2...])` or a Scikit-Learn `OneHotEncoder`.

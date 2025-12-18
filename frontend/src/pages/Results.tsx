@@ -204,6 +204,7 @@ export default function Results() {
 
             setAdaptedCode(code!);
             setLatestCode(code!);
+            setExecutionResult(null);
             setError(null);
             setAiErrorSummary(null);
 
