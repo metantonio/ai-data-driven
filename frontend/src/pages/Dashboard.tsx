@@ -135,6 +135,13 @@ export default function Dashboard() {
                             >
                                 <HelpCircle className="h-6 w-6" />
                             </button>
+                            <button
+                                onClick={() => navigate('/settings')}
+                                className="p-2 ml-2 bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl transition-all"
+                                title="System Settings"
+                            >
+                                <Settings className="h-6 w-6" />
+                            </button>
                         </div>
 
                         <div className="space-y-6">

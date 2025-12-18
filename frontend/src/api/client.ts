@@ -170,3 +170,12 @@ export const runAutomaticEDAStream = async (
         buffer = lines[lines.length - 1];
     }
 };
+export const getSettings = async () => {
+    const response = await api.get('/settings');
+    return response.data;
+};
+
+export const updateSettings = async (settings: any) => {
+    const response = await api.post('/settings', settings);
+    return response.data;
+};
