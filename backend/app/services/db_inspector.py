@@ -2,44 +2,61 @@ from sqlalchemy import create_engine, inspect
 from typing import Dict, Any, List
 
 class DatabaseInspector:
-    def __init__(self, connection_string: str):
+    @staticmethod
+    def resolve_connection_string(connection_string: str) -> str:
+        """
+        Resolves a connection string, handling relative SQLite paths robustly,
+        especially in bundled (.exe) environments.
+        """
         import os
         import sys
         from pathlib import Path
 
-        # 1. Path Robustness for SQLite
-        if connection_string.startswith("sqlite:///"):
-            original_path = connection_string.replace("sqlite:///", "")
-            
-            if original_path != ":memory:":
-                # Try to resolve the path
-                path_to_check = Path(original_path)
-                
-                # If path doesn't exist, try common alternatives (like ../../ in .exe)
-                if not path_to_check.exists():
-                    alternatives = []
-                    # If frozen, the execution context is different
-                    if getattr(sys, 'frozen', False):
-                        # The .exe is in backend/dist/, so ../../ might be the project root
-                        alternatives.append(Path(sys.executable).parent / ".." / ".." / original_path.replace("../", ""))
-                        alternatives.append(Path(sys.executable).parent / original_path)
-                    
-                    # Also try relative to current working directory
-                    alternatives.append(Path(os.getcwd()) / original_path)
-                    
-                    for alt in alternatives:
-                        if alt.exists():
-                            path_to_check = alt
-                            connection_string = f"sqlite:///{alt.absolute()}"
-                            print(f"Database found at alternative path: {alt}")
-                            break
-                
-                # Final check
-                if not path_to_check.exists():
-                    abs_path = os.path.abspath(original_path)
-                    raise FileNotFoundError(f"Database file not found. Original: {original_path}, Absolute: {abs_path}")
+        if not connection_string.startswith("sqlite:///"):
+            return connection_string
 
+        original_path = connection_string.replace("sqlite:///", "")
+        if original_path == ":memory:":
+            return connection_string
+
+        # Try to resolve the path
+        path_to_check = Path(original_path)
+        
+        # If path doesn't exist, try common alternatives
+        if not path_to_check.exists():
+            alternatives = []
+            # If frozen, the execution context is different
+            if getattr(sys, 'frozen', False):
+                # The .exe is in backend/dist/, so ../../ might be the project root
+                # Original path might be ../example.db, we want to try ../../example.db
+                # simplified: try relative to executable
+                alternatives.append(Path(sys.executable).parent / ".." / ".." / original_path.replace("../", ""))
+                alternatives.append(Path(sys.executable).parent / original_path)
+            
+            # Also try relative to current working directory
+            alternatives.append(Path(os.getcwd()) / original_path)
+            
+            for alt in alternatives:
+                if alt.exists():
+                    print(f"Database found at alternative path: {alt}")
+                    return f"sqlite:///{alt.absolute()}"
+        
+        return connection_string
+
+    def __init__(self, connection_string: str):
+        # Resolve the string first
+        connection_string = self.resolve_connection_string(connection_string)
+        
         self.engine = create_engine(connection_string)
+        
+        # SQLite specific validation (after resolution)
+        if connection_string.startswith("sqlite:///"):
+            path = connection_string.replace("sqlite:///", "")
+            if path != ":memory:":
+                import os
+                if not os.path.exists(path):
+                    abs_path = os.path.abspath(path)
+                    raise FileNotFoundError(f"Database file not found at: {abs_path}")
         
         # Test connection immediately to fail fast
         try:

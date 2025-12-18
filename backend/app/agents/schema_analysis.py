@@ -6,6 +6,9 @@ class SchemaAnalysisAgent:
         self.llm = llm_service
 
     def analyze(self, connection_string: str, algorithm_type: str = "linear_regression") -> dict:
+        # Resolve connection string early
+        connection_string = DatabaseInspector.resolve_connection_string(connection_string)
+        
         # 1. Inspect Database
         inspector = DatabaseInspector(connection_string)
         schema_summary = inspector.get_schema_summary()
@@ -38,6 +41,9 @@ class SchemaAnalysisAgent:
         }
 
     def analyze_with_comments(self, connection_string: str, user_comments: dict, algorithm_type: str = "linear_regression") -> dict:
+        # Resolve connection string early
+        connection_string = DatabaseInspector.resolve_connection_string(connection_string)
+        
         # 1. Inspect Database
         inspector = DatabaseInspector(connection_string)
         schema_summary = inspector.get_schema_summary()

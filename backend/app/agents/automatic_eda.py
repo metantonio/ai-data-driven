@@ -173,6 +173,9 @@ class AutomaticEDAAgent:
             yield {"status": "error", "message": f"AI Agent Analysis failed: {str(e)}", "data": None}
 
     def _load_data(self, connection_string: str) -> pd.DataFrame:
+        from app.services.db_inspector import DatabaseInspector
+        connection_string = DatabaseInspector.resolve_connection_string(connection_string)
+        
         engine = create_engine(connection_string)
         inspector = sql_inspect(engine)
         tables = inspector.get_table_names()
