@@ -2,6 +2,9 @@ import uvicorn
 import os
 import sys
 import multiprocessing
+import webbrowser
+import threading
+import time
 from pathlib import Path
 from app.main import app
 
@@ -22,6 +25,14 @@ def start_server():
     if backend_path not in sys.path:
         sys.path.append(backend_path)
         
+    # Function to open browser after a delay
+    def open_browser():
+        time.sleep(1.5)  # Give time for the server to bind the port
+        webbrowser.open("http://127.0.0.1:8000")
+
+    # Start browser thread
+    threading.Thread(target=open_browser, daemon=True).start()
+
     uvicorn.run(
         app, 
         host="127.0.0.1", 

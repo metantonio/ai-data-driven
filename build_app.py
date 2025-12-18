@@ -46,13 +46,13 @@ def build_app():
         "--collect-all pydantic "
         "--add-data \"static;static\" "
         "--add-data \"app;app\" "
-        "--name \"AI-Data-Driven-App\" "
+        "--name \"QLX-AI-Data-Science-App\" "
         "server.py"
     )
     run_command(pyinstaller_cmd, cwd=str(backend_dir))
 
     print("\n--- Success! ---")
-    print(f"Your executable can be found in: {backend_dir / 'dist' / 'AI-Data-Driven-App.exe'}")
+    print(f"Your executable can be found in: {backend_dir / 'dist' / 'QLX-AI-Data-Science-App.exe'}")
 
 if __name__ == "__main__":
     build_app()
