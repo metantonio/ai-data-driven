@@ -46,4 +46,24 @@ def start_server():
 if __name__ == "__main__":
     # Required for some platforms when using multiprocessing and freeze
     multiprocessing.freeze_support()
+    
+    # Check if we are being asked to run a script instead of starting the server
+    # This prevents port conflicts when the executor runs generated code in frozen mode
+    if len(sys.argv) > 1 and sys.argv[1].endswith(".py"):
+        import runpy
+        script_path = sys.argv[1]
+        print(f"Executing script: {script_path}")
+        try:
+            # Set sys.argv correctly for the script
+            # sys.argv[0] should be the script path, or we can keep the exe path
+            # but usually scripts expect argv[0] to be their name.
+            original_argv = sys.argv[:]
+            sys.argv = [script_path] + sys.argv[2:]
+            runpy.run_path(script_path, run_name="__main__")
+        except Exception as e:
+            print(f"Error executing script: {e}")
+            sys.exit(1)
+        finally:
+            sys.exit(0)
+    
     start_server()
