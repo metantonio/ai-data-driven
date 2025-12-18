@@ -224,6 +224,13 @@ export default function Results() {
                     if (update.data?.is_ai_summary) {
                         setAiErrorSummary(update.message);
                     }
+                    if (update.data?.stderr) {
+                        setExecutionResult(prev => ({
+                            stdout: prev?.stdout || '',
+                            stderr: update.data.stderr,
+                            report: null
+                        }));
+                    }
                 } else if (update.status === 'success') {
                     finalStateReached = true;
                     setAiErrorSummary(null); // Clear any intermediate error summary on success
@@ -352,7 +359,7 @@ export default function Results() {
                         </div>
 
                         {/* Retry Button */}
-                        {stage === 'done' && !executionResult?.report && (
+                        {(stage === 'done' || error || aiErrorSummary) && !executionResult?.report && (
                             <div className="flex justify-end mt-2 pt-4 border-t border-red-500/10">
                                 <button
                                     onClick={handleRetry}
@@ -360,9 +367,11 @@ export default function Results() {
                                 >
                                     <div className="flex items-center gap-2">
                                         <Play className="h-4 w-4 fill-current" />
-                                        <span>Manual Retry with AI Fix</span>
+                                        <span>{stage === 'done' ? 'Manual Retry with AI Fix' : 'Stop & Force Manual Retry'}</span>
                                     </div>
-                                    <span className="text-[10px] opacity-70 font-normal">Forces 3 additional automated fixing attempts</span>
+                                    <span className="text-[10px] opacity-70 font-normal">
+                                        {stage === 'done' ? 'Forces 3 additional automated fixing attempts' : 'Stops current attempt and starts fresh with 3 new fixes'}
+                                    </span>
                                 </button>
                             </div>
                         )}

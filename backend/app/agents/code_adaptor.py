@@ -88,7 +88,9 @@ class CodeAdaptationAgent:
              Note: 'hdbcli' must be installed.
            - For large datasets in Cloud DBs (Postgres/HANA), consider using 'LIMIT' for initial testing if not specified otherwise.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
-           - IMPORTANT: DO NOT use `df[col] = pd.get_dummies(df[col])`. This will error if there are multiple categories. 
+           - CRITICAL: DO NOT hallucinate column names. ONLY use columns explicitly listed in the schema provided for each table.
+           - IF you need to merge tables, identify the correct keys from the provided schema. DO NOT assume junction columns like 'casino_id' exist unless they are visible in the schema.
+           - DO NOT use `df[col] = pd.get_dummies(df[col])`. This will error if there are multiple categories. 
            - INSTEAD: Use `df = pd.get_dummies(df, columns=[col1, col2...])` or a Scikit-Learn `OneHotEncoder`.
            - Avoid deprecated pandas methods: Use `df.ffill()` or `df.bfill()` instead of `df.fillna(method='ffill')`.
            - Check if columns exist before applying operations like 'get_dummies' or 'drop'.
