@@ -3,6 +3,7 @@ import os
 import sys
 import multiprocessing
 from pathlib import Path
+from app.main import app
 
 # This allows for bundling with PyInstaller
 if getattr(sys, 'frozen', False):
@@ -22,11 +23,13 @@ def start_server():
         sys.path.append(backend_path)
         
     uvicorn.run(
-        "app.main:app", 
+        app, 
         host="127.0.0.1", 
         port=8000, 
         reload=False, 
-        workers=1
+        workers=1,
+        log_level="info",
+        use_colors=False
     )
 
 if __name__ == "__main__":

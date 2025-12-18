@@ -24,3 +24,5 @@ hdbcli==2.26.26
 ipython==8.12.3
 pymysql==1.1.1
 cryptography==42.0.5
+backports.tarfile==1.2.0
+pyinstaller==6.11.1

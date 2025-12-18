@@ -28,11 +28,22 @@ def build_app():
     print(f"Copied frontend build to {static_dir}")
 
     print("--- 3. Running PyInstaller ---")
-    # We bundle 'static' into the executable
-    # --add-data "static;static" (Windows syntax)
-    # We target server.py
+    
+    # Ensure we use the virtual environment binaries if they exist
+    venv_python = backend_dir / "venv" / "Scripts" / "python.exe"
+    pyinstaller_base = "python -m PyInstaller"
+    
+    if venv_python.exists():
+        pyinstaller_base = f'"{venv_python}" -m PyInstaller'
+        print(f"Using virtual environment Python for PyInstaller: {venv_python}")
+    else:
+        print("Warning: Virtual environment python not found in backend/venv. Using global python.")
+
     pyinstaller_cmd = (
-        "pyinstaller --noconfirm --onefile --windowed "
+        f"{pyinstaller_base} --noconfirm --onefile --windowed "
+        "--collect-all fastapi "
+        "--collect-all uvicorn "
+        "--collect-all pydantic "
         "--add-data \"static;static\" "
         "--add-data \"app;app\" "
         "--name \"AI-Data-Driven-App\" "
