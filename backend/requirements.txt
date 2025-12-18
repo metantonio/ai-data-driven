@@ -22,3 +22,5 @@ psycopg2-binary==2.9.9
 sqlalchemy-hana==1.1.0
 hdbcli==2.26.26
 ipython==8.12.3
+pymysql==1.1.1
+cryptography==42.0.5

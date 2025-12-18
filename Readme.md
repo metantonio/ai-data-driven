@@ -48,8 +48,13 @@ npm run dev
 - Ensure `hdbcli` and `sqlalchemy-hana` are installed (included in requirements.txt).
 - The port is typically 3xx15 where xx is the instance number (e.g., 30015 for instance 00).
 
-### PostgreSQL
+### PostgreSQL / AWS RDS (PostgreSQL)
 `postgresql://user:password@host:port/dbname`
+- For AWS RDS, the host is usually the endpoint provided in the AWS Console (e.g., `mydb.cabc123.us-east-1.rds.amazonaws.com`).
+
+### MySQL / AWS RDS (MySQL/MariaDB)
+`mysql+pymysql://user:password@host:port/dbname`
+- For AWS RDS, ensure the Security Group allows inbound traffic on port 3306 from your IP.
 
 ## 4. End-to-End Test Scenario
 1. Open Browser to `http://localhost:5173`.

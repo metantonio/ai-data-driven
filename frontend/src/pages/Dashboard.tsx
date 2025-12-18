@@ -11,6 +11,9 @@ function ConnectionGuide({ onSelect }: { onSelect: (val: string) => void }) {
         { label: 'SQLite Casino', value: 'sqlite:///../example_casino.db', desc: 'Sample casino dataset.' },
         { label: 'SAP HANA', value: 'hana://user:password@host:port', desc: 'Port is usually 3xx15 (xx=instance).' },
         { label: 'PostgreSQL', value: 'postgresql://user:password@host:port/dbname', desc: 'Standard PostgreSQL connection.' },
+        { label: 'MySQL / MariaDB', value: 'mysql+pymysql://user:password@host:3306/dbname', desc: 'Uses pymysql driver (standard port 3306).' },
+        { label: 'AWS RDS (Postgres)', value: 'postgresql://user:password@mydb.cabc123.us-east-1.rds.amazonaws.com:5432/dbname', desc: 'AWS RDS endpoint with standard port 5432.' },
+        { label: 'AWS RDS (MySQL)', value: 'mysql+pymysql://user:password@mydb.cabc123.us-east-1.rds.amazonaws.com:3306/dbname', desc: 'AWS RDS endpoint with standard port 3306.' },
     ];
 
     const copyToClipboard = (text: string) => {
