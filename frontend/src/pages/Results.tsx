@@ -336,7 +336,7 @@ export default function Results() {
                     </div>
                 </div>
 
-                {(error || aiErrorSummary) && !executionResult?.report && (
+                {(error || aiErrorSummary || (stage === 'done' && !executionResult?.report)) && (
                     <div className="p-6 bg-red-900/20 border border-red-500/50 rounded-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-start gap-4">
                             <div className="p-3 bg-red-500/20 rounded-xl">
@@ -344,10 +344,14 @@ export default function Results() {
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-xl font-bold text-red-200">
-                                    {error === 'Max retries reached. Execution failed.' ? 'Automated Fixing Failed' : 'Pipeline Execution Error'}
+                                    {!executionResult?.report && stage === 'done' && !error && !aiErrorSummary
+                                        ? 'No valid execution report found'
+                                        : error === 'Max retries reached. Execution failed.'
+                                            ? 'Automated Fixing Failed'
+                                            : 'Pipeline Execution Error'}
                                 </h3>
                                 <div className="mt-3 text-red-300/90 leading-relaxed bg-red-950/30 p-4 rounded-xl border border-red-500/10">
-                                    {aiErrorSummary || error}
+                                    {aiErrorSummary || error || 'The pipeline finished but did not produce a results report. Check the execution logs for details.'}
                                 </div>
 
                                 {error && aiErrorSummary && error !== aiErrorSummary && (

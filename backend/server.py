@@ -67,10 +67,11 @@ if __name__ == "__main__":
             original_argv = sys.argv[:]
             sys.argv = [script_path] + sys.argv[2:]
             runpy.run_path(script_path, run_name="__main__")
+            sys.exit(0)
         except Exception as e:
             print(f"Error executing script: {e}")
+            import traceback
+            traceback.print_exc()
             sys.exit(1)
-        finally:
-            sys.exit(0)
     
     start_server()

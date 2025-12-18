@@ -89,12 +89,13 @@ class CodeAdaptationAgent:
            - For large datasets in Cloud DBs (Postgres/HANA), consider using 'LIMIT' for initial testing if not specified otherwise.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
            - CRITICAL: DO NOT hallucinate column names. ONLY use columns explicitly listed in the schema provided for each table.
-           - IF you need to merge tables, identify the correct keys from the provided schema. DO NOT assume junction columns like 'casino_id' exist unless they are visible in the schema.
+           - DO NOT assume columns like 'loyalty_tier', 'member_status', 'casino_id', or 'player_name' exist unless you see them in the specific table schema.
+           - Check `df.columns` before dropping or selecting. If the target column or any feature is missing, raise a clear ValueError or print a diagnostic before crash.
+           - IF you need to merge tables, identify the correct keys from THE PROVIDED SCHEMA. DO NOT assume junction columns exist unless visible.
            - DO NOT use `df[col] = pd.get_dummies(df[col])`. This will error if there are multiple categories. 
            - INSTEAD: Use `df = pd.get_dummies(df, columns=[col1, col2...])` or a Scikit-Learn `OneHotEncoder`.
            - Avoid deprecated pandas methods: Use `df.ffill()` or `df.bfill()` instead of `df.fillna(method='ffill')`.
-           - Check if columns exist before applying operations like 'get_dummies' or 'drop'.
-           - If a column is missing, print a warning but do not crash if possible, or fail explicitly with `import sys; sys.exit(1)`.
+           - If using `.fillna(inplace=True)`, be aware it's deprecated for some pandas versions. Use `df[col] = df[col].fillna(...)` to be safe.
         3. Select the most likely target column from the schema for 'train_model'.
         4. Ensure the model is saved to 'models/model.joblib' (or unique name) and 'model_path' is in the JSON report.
         5. DO NOT wrap the entire logic in a try-except block that prints a custom message. Allow Python's standard traceback or the template's main try-except to handle errors so the process exits with code 1.
