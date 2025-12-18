@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { ChevronLeft, BarChart2 } from 'lucide-react';

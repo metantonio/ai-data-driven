@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings as SettingsIcon, Save, ArrowLeft, Loader, Database, Cpu, Globe, Key, AlertCircle, CheckCircle } from 'lucide-react';
 import { getSettings, updateSettings } from '../api/client';
@@ -81,8 +81,8 @@ export default function Settings() {
 
                 {message && (
                     <div className={`p-4 rounded-xl flex items-center gap-3 border ${message.type === 'success'
-                            ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                            : 'bg-red-500/10 border-red-500/50 text-red-400'
+                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
+                        : 'bg-red-500/10 border-red-500/50 text-red-400'
                         }`}>
                         {message.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
                         <span className="text-sm font-medium">{message.text}</span>
@@ -194,8 +194,8 @@ export default function Settings() {
                             type="submit"
                             disabled={saving}
                             className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${saving
-                                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 hover:shadow-cyan-500/40 transform hover:-translate-y-0.5'
+                                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 hover:shadow-cyan-500/40 transform hover:-translate-y-0.5'
                                 }`}
                         >
                             {saving ? (
