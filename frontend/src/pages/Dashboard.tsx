@@ -7,7 +7,8 @@ function ConnectionGuide({ onSelect }: { onSelect: (val: string) => void }) {
     const [copied, setCopied] = useState<string | null>(null);
 
     const examples = [
-        { label: 'SQLite (Default)', value: 'sqlite:///../example.db', desc: 'Relative path to root project directory.' },
+        { label: 'SQLite (example)', value: 'sqlite:///../example.db', desc: 'Relative path to root project directory.' },
+        { label: 'SQLite (example)', value: 'C:\\Repositories\\ai-data-driven\\example.db', desc: 'Absolute path to root project directory.' },
         { label: 'SQLite Casino', value: 'sqlite:///../example_casino.db', desc: 'Sample casino dataset.' },
         { label: 'SAP HANA', value: 'hana://user:password@host:port', desc: 'Port is usually 3xx15 (xx=instance).' },
         { label: 'PostgreSQL', value: 'postgresql://user:password@host:port/dbname', desc: 'Standard PostgreSQL connection.' },
@@ -112,7 +113,7 @@ export default function Dashboard() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                             </span>
-                            QLX AI-Powered Data Science
+                            <a href="https://www.qlx.com" target="_blank" rel="noopener noreferrer">QLX AI-Powered Data Science</a>
                         </div>
                         <h1 className="text-5xl font-extrabold text-white tracking-tight leading-tight">
                             Build ML Pipelines <br />
