@@ -10,6 +10,9 @@ Download the release from [here](https://github.com/metantonio/ai-data-driven/re
 
 ### Easy configuration with LLM providers (using release version)
 
+The release version includes a settings page where you can configure the LLM provider, API URL, model, database URL, and API key.
+
+Also, don't forget to shutdown the application to abort the background process.
 <img src="./Settings.jpeg" alt="QLX AI Powered ML System Settings">
 
 ## Prerequisites for development
