@@ -88,8 +88,11 @@ class CodeAdaptationAgent:
              Note: 'hdbcli' must be installed.
            - For large datasets in Cloud DBs (Postgres/HANA), consider using 'LIMIT' for initial testing if not specified otherwise.
         2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
+           - IMPORTANT: DO NOT use `df[col] = pd.get_dummies(df[col])`. This will error if there are multiple categories. 
+           - INSTEAD: Use `df = pd.get_dummies(df, columns=[col1, col2...])` or a Scikit-Learn `OneHotEncoder`.
+           - Avoid deprecated pandas methods: Use `df.ffill()` or `df.bfill()` instead of `df.fillna(method='ffill')`.
            - Check if columns exist before applying operations like 'get_dummies' or 'drop'.
-           - If a column is missing, print a warning but do not crash if possible, or fail explicitly with 'raise ValueError'.
+           - If a column is missing, print a warning but do not crash if possible, or fail explicitly with `import sys; sys.exit(1)`.
         3. Select the most likely target column from the schema for 'train_model'.
         4. Ensure the model is saved to 'models/model.joblib' (or unique name) and 'model_path' is in the JSON report.
         5. DO NOT wrap the entire logic in a try-except block that prints a custom message. Allow Python's standard traceback or the template's main try-except to handle errors so the process exits with code 1.
@@ -144,7 +147,8 @@ class CodeAdaptationAgent:
         7. IGNORE DeprecationWarnings or FutureWarnings unless they are the direct cause of the crash. Focus on the 'Traceback' and the final 'Exception'.
         8. CRITICAL: DO NOT wrap the code in a `try-except` block that prints an error and continues or exits with 0. Let the script crash with a traceback, or use `traceback.print_exc(); sys.exit(1)` if you must catch it. The system needs a non-zero exit code to know it failed.
         9. IMPORTANT: If the error is regarding 'OneHotEncoder' and 'sparse', replace `sparse=False` with `sparse_output=False`.
-        10. IF the error is "Classification metrics can't handle a mix of continuous and binary targets", it means you are using a Classifier on a Regression target. Fix this by converting the target variable `y` to binary (e.g., `y = (y > y.mean()).astype(int)`) or using a Regressor instead.
+        10. IMPORTANT: Avoid the error "Columns must be same length as key" by NOT assigning get_dummies to a single column. Use `df = pd.get_dummies(df, columns=['col_name'])` instead.
+        11. IF the error is "Classification metrics can't handle a mix of continuous and binary targets", it means you are using a Classifier on a Regression target. Fix this by converting the target variable `y` to binary (e.g., `y = (y > y.mean()).astype(int)`) or using a Regressor instead.
         11. Output the full valid Python code.
         """
         

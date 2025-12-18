@@ -352,14 +352,17 @@ export default function Results() {
                         </div>
 
                         {/* Retry Button */}
-                        {stage === 'done' && (error === 'Max retries reached. Execution failed.' || error?.includes('Max retries')) && (
+                        {stage === 'done' && !executionResult?.report && (
                             <div className="flex justify-end mt-2 pt-4 border-t border-red-500/10">
                                 <button
                                     onClick={handleRetry}
-                                    className="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-900/40 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+                                    className="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-red-900/40 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center gap-1"
                                 >
-                                    <Play className="h-4 w-4 fill-current" />
-                                    Force 3 More Fix Attempts
+                                    <div className="flex items-center gap-2">
+                                        <Play className="h-4 w-4 fill-current" />
+                                        <span>Manual Retry with AI Fix</span>
+                                    </div>
+                                    <span className="text-[10px] opacity-70 font-normal">Forces 3 additional automated fixing attempts</span>
                                 </button>
                             </div>
                         )}

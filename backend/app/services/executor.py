@@ -89,6 +89,8 @@ class ExecutorService:
                         return
 
             except Exception as e:
+                 import traceback
+                 traceback.print_exc()
                  yield {"status": "final_error", "message": f"System error: {str(e)}", "data": {"stdout": "", "stderr": str(e), "report": None, "code": current_code}}
                  return
             finally:
@@ -97,3 +99,6 @@ class ExecutorService:
                         os.remove(temp_file_path)
                     except:
                         pass
+
+        # Fallback if loop finishes unexpectedly
+        yield {"status": "final_error", "message": "Execution ended without reaching success state.", "data": {"code": current_code}}
