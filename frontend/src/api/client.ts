@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = '/api';
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
@@ -25,7 +25,7 @@ export interface ExecutionReport {
 }
 
 export const analyzeSchema = async (connectionString: string, algorithmType: string) => {
-    const response = await axios.post(`${API_BASE_URL}/analyze-schema`, {
+    const response = await api.post('/analyze-schema', {
         connection_string: connectionString,
         algorithm_type: algorithmType
     });
