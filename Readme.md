@@ -67,7 +67,7 @@ npm run dev
    - **Insights**: Check if a text summary appears.
 
 ## Troubleshooting
-- **Connection Error**: Ensure the path to `example.db` is correct relative to the running backend process.
+- **Connection Error**: Ensure the path to `example.db` is correct relative to the running backend process, or use absolute path.
 - **Missing Dependencies**: Check [requirements.txt](file:///c:/Repositorios/ai-data-driven/backend/requirements.txt) for `scikit-learn` (it might be missing).
 
 > `scikit-learn` was not explicitly added to [backend/requirements.txt](file:///c:/Repositorios/ai-data-driven/backend/requirements.txt) but is needed by the *generated* code. The execution environment needs it.
