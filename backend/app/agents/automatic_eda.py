@@ -19,7 +19,8 @@ class AutomaticEDAAgent:
         try:
             yield {"status": "info", "message": "Initializing AI EDA Agent...", "data": None}
             
-            # 1. Load Data
+            # Insight accumulation
+            insights_summary = []
             yield {"status": "info", "message": "Loading data for analysis...", "data": None}
             df = self._load_data(connection_string)
             if df.empty:
@@ -54,6 +55,7 @@ class AutomaticEDAAgent:
                 "message": "AI self-questioning...", 
                 "data": {"thought": questions, "results": stats['ai_message']}
             }
+            insights_summary.append(f"Phase 1 - Data Quality Questions:\n" + "\n".join([f"- {q}" for q in questions]))
             await asyncio.sleep(1) # Visual pacing
 
             # 3. Missing Data Analysis
@@ -81,6 +83,7 @@ class AutomaticEDAAgent:
                 "message": "Analyzing data gaps...", 
                 "data": {"thought": [insight], "results": missing['ai_message'], "visualization": missing['artifacts'].get('bar_plot')}
             }
+            insights_summary.append(f"Phase 2 - Missing Data Insights:\n- {insight}")
             await asyncio.sleep(1)
 
             # 4. Correlation Analysis
@@ -107,6 +110,7 @@ class AutomaticEDAAgent:
                 "message": "Mapping feature relationships...", 
                 "data": {"thought": [corr_thought], "results": corrs['ai_message'], "visualization": corrs['artifacts'].get('heatmap_plot')}
             }
+            insights_summary.append(f"Phase 3 - Correlation Insights:\n- {corr_thought}")
             await asyncio.sleep(1)
 
             # 5. Suggested Models
@@ -157,7 +161,10 @@ class AutomaticEDAAgent:
             yield {
                 "status": "success", 
                 "message": "Automatic EDA Complete!", 
-                "data": {"suggestions": suggestions}
+                "data": {
+                    "suggestions": suggestions,
+                    "eda_summary": "\n\n".join(insights_summary)
+                }
             }
 
         except Exception as e:

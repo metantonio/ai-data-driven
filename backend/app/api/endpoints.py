@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
 from app.services.llm_service import LLMService
 from app.agents.schema_analysis import SchemaAnalysisAgent
 from app.agents.code_adaptor import CodeAdaptationAgent
@@ -16,6 +17,7 @@ class AnalyzeRequest(BaseModel):
 class AdaptRequest(BaseModel):
     schema_analysis: dict
     algorithm_type: str = "linear_regression"
+    eda_summary: Optional[str] = None
 
 @router.post("/analyze-schema")
 async def analyze_schema_endpoint(request: AnalyzeRequest):
@@ -65,7 +67,11 @@ def analyze_schema_with_comments(request: AnalyzeWithCommentsRequest):
 def adapt_code(request: AdaptRequest):
     try:
         agent = CodeAdaptationAgent(llm_service)
-        result = agent.adapt(request.schema_analysis, request.algorithm_type)
+        result = agent.adapt(
+            request.schema_analysis, 
+            request.algorithm_type, 
+            request.eda_summary
+        )
         return {"code": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -21,6 +21,7 @@ export default function EDAProgress() {
     const [isComplete, setIsComplete] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>(algorithmType);
+    const [edaSummary, setEdaSummary] = useState<string>('');
     const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
@@ -57,6 +58,7 @@ export default function EDAProgress() {
                     if (update.status === 'success') {
                         setIsComplete(true);
                         setSuggestions(update.data.suggestions || []);
+                        setEdaSummary(update.data.eda_summary || '');
                     }
                     if (update.status === 'error') {
                         setError(update.message);
@@ -76,7 +78,8 @@ export default function EDAProgress() {
             state: {
                 schemaAnalysis,
                 connectionString,
-                algorithmType: selectedAlgorithm
+                algorithmType: selectedAlgorithm,
+                edaSummary
             }
         });
     };
@@ -180,8 +183,8 @@ export default function EDAProgress() {
                                         key={i}
                                         onClick={() => setSelectedAlgorithm(s.name)}
                                         className={`p-5 rounded-xl transition-all cursor-pointer group border-2 ${selectedAlgorithm === s.name
-                                                ? 'bg-emerald-500/20 border-emerald-500 shadow-lg shadow-emerald-500/10'
-                                                : 'bg-slate-900/50 border-slate-700 hover:border-emerald-500/50'
+                                            ? 'bg-emerald-500/20 border-emerald-500 shadow-lg shadow-emerald-500/10'
+                                            : 'bg-slate-900/50 border-slate-700 hover:border-emerald-500/50'
                                             }`}
                                     >
                                         <div className="flex justify-between items-start mb-2">
@@ -216,8 +219,8 @@ export default function EDAProgress() {
                     <button
                         onClick={handleProceed}
                         className={`px-10 py-4 rounded-2xl font-bold flex items-center gap-3 transition-all shadow-xl group ${isComplete
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-emerald-500/20'
-                                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-emerald-500/20'
+                            : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                             }`}
                         disabled={!isComplete}
                     >

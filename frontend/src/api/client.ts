@@ -46,8 +46,12 @@ export const analyzeSchemaWithComments = async (connectionString: string, userCo
     return response.data;
 };
 
-export const adaptCode = async (schemaAnalysis: SchemaAnalysis, algorithmType: string = "linear_regression"): Promise<{ code: string }> => {
-    const response = await api.post('/adapt-code', { schema_analysis: schemaAnalysis, algorithm_type: algorithmType });
+export const adaptCode = async (schemaAnalysis: SchemaAnalysis, algorithmType: string = "linear_regression", edaSummary?: string): Promise<{ code: string }> => {
+    const response = await api.post('/adapt-code', {
+        schema_analysis: schemaAnalysis,
+        algorithm_type: algorithmType,
+        eda_summary: edaSummary
+    });
     return response.data;
 };
 

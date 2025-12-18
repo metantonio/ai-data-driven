@@ -145,7 +145,7 @@ function CopyButton({ text, label }: { text: string, label?: string }) {
 export default function Results() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { schemaAnalysis, algorithmType } = location.state || {};
+    const { schemaAnalysis, algorithmType, edaSummary } = location.state || {};
 
     // State
     const [stage, setStage] = useState<'adapt' | 'execute' | 'insight' | 'done'>('adapt');
@@ -197,7 +197,7 @@ export default function Results() {
 
             if (!code) {
                 setStage('adapt');
-                const adaptRes = await adaptCode(schemaAnalysis, algorithmType);
+                const adaptRes = await adaptCode(schemaAnalysis, algorithmType, edaSummary);
                 if (controller.signal.aborted) return;
                 code = adaptRes.code;
             }

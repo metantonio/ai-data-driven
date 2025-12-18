@@ -6,7 +6,7 @@ class CodeAdaptationAgent:
         self.llm = llm_service
         self.template_path = template_path
 
-    def adapt(self, schema_analysis: dict, algorithm_type: str = "linear_regression") -> str:
+    def adapt(self, schema_analysis: dict, algorithm_type: str = "linear_regression", eda_summary: str = None) -> str:
         # Determine template based on algorithm_type
         template_map = {
             "linear_regression": "linear_regression.py",
@@ -57,6 +57,9 @@ class CodeAdaptationAgent:
 
         Dataset Analysis:
         {schema_analysis['analysis']}
+
+        {"EDA Findings & Context:" if eda_summary else ""}
+        {eda_summary if eda_summary else ""}
 
         User Comments (Context):
         {schema_analysis.get('user_comments', 'None provided')}
