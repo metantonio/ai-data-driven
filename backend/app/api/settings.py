@@ -14,7 +14,11 @@ def get_env_path():
     if getattr(sys, 'frozen', False):
         exe_dir = Path(sys.executable).parent
         env_file = exe_dir / ".env"
-        print(f"Frozen mode: Looking for .env at {env_file}")
+        print(f"--- Frozen mode detected ---")
+        print(f"Executable location: {sys.executable}")
+        print(f"Looking for .env at: {env_file}")
+        if not env_file.exists():
+            print(f"Warning: .env file NOT found at {env_file}. Using default settings.")
         return env_file
     
     # Development mode paths
