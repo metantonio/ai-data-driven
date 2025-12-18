@@ -4,7 +4,15 @@ QLX AI Powered ML System is a demo web application that uses machine learning to
 
 <img src="./Portada.jpeg" alt="QLX AI Powered ML System">
 
-## Prerequisites
+## Easy install with Windows release
+
+Download the release from [here](https://github.com/metantonio/ai-data-driven/releases) and run the installer.
+
+### Easy configuration with LLM providers (using release version)
+
+<img src="./Settings.jpeg" alt="QLX AI Powered ML System Settings">
+
+## Prerequisites for development
 - Python 3.11.6+
 - Node.js 24.11.1+
 
