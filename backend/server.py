@@ -16,7 +16,7 @@ else:
     current_dir = Path(__file__).parent
 
 def start_server():
-    print(f"Starting AI-Data-Driven ML System Server...")
+    print(f"Starting QLX-AI-Data-Science-App Server...")
     print(f"Running from: {current_dir}")
     
     # We use 'app.main:app' as the import string so uvicorn can find it

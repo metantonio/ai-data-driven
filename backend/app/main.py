@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-app = FastAPI(title="AI-Data-Driven ML System", version="0.1.0")
+app = FastAPI(title="QLX AI Data Science System", version="0.1.0")
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,14 +14,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "message": "Service is running"}
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the AI-Data-Driven ML System API"}
 
 from app.api import endpoints, predict, eda, settings
 app.include_router(endpoints.router, prefix="/api")
