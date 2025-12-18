@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Save, ArrowLeft, Loader, Database, Cpu, Globe, Key, AlertCircle, CheckCircle } from 'lucide-react';
-import { getSettings, updateSettings } from '../api/client';
+import { Settings as SettingsIcon, Save, ArrowLeft, Loader, Database, Cpu, Globe, Key, AlertCircle, CheckCircle, Power } from 'lucide-react';
+import { getSettings, updateSettings, shutdownApp } from '../api/client';
 
 export default function Settings() {
     const [config, setConfig] = useState({
@@ -42,6 +42,18 @@ export default function Settings() {
             setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save settings.' });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleShutdown = async () => {
+        if (window.confirm('Are you sure you want to shut down the application server? You will need to restart the .exe manually.')) {
+            try {
+                await shutdownApp();
+                setMessage({ type: 'success', text: 'Application is shutting down. You can close this window now.' });
+                // We don't clear saving/loading because the app is dying
+            } catch (err) {
+                setMessage({ type: 'error', text: 'Failed to request shutdown.' });
+            }
         }
     };
 
@@ -189,7 +201,7 @@ export default function Settings() {
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-4 flex flex-col gap-4">
                         <button
                             type="submit"
                             disabled={saving}
@@ -209,6 +221,15 @@ export default function Settings() {
                                     Apply Configuration
                                 </>
                             )}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleShutdown}
+                            className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+                        >
+                            <Power className="h-5 w-5" />
+                            Shutdown Application
                         </button>
                     </div>
                 </form>

@@ -179,3 +179,8 @@ export const updateSettings = async (settings: any) => {
     const response = await api.post('/settings', settings);
     return response.data;
 };
+
+export const shutdownApp = async () => {
+    const response = await api.post('/settings/shutdown');
+    return response.data;
+};

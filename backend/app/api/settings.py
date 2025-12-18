@@ -3,12 +3,21 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv, set_key
 from pathlib import Path
+import sys
+import signal
 
 router = APIRouter()
 
 # Try to locate the .env file robustly
 def get_env_path():
-    # Check current dir, then parent, then backend/
+    # If running as executable, look for .env next to the .exe file
+    if getattr(sys, 'frozen', False):
+        exe_dir = Path(sys.executable).parent
+        env_file = exe_dir / ".env"
+        print(f"Frozen mode: Looking for .env at {env_file}")
+        return env_file
+    
+    # Development mode paths
     paths = [
         Path(".env"),
         Path("backend/.env"),
@@ -18,7 +27,6 @@ def get_env_path():
     for p in paths:
         if p.exists():
             return p
-    # Default to creating one in the current dir if none found
     return Path(".env")
 
 ENV_PATH = get_env_path()
@@ -62,3 +70,19 @@ def update_settings(settings: Settings):
     except Exception as e:
         print(f"Error updating .env: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
+
+@router.post("/shutdown")
+def shutdown():
+    """Shuts down the application server."""
+    print("Shutdown requested...")
+    # Schedule shutdown after a short delay so the response can be sent
+    def delayed_shutdown():
+        import time
+        time.sleep(1)
+        # On Windows, SIGINT is generally handled well for graceful shutdown
+        os.kill(os.getpid(), signal.SIGINT)
+        
+    import threading
+    threading.Thread(target=delayed_shutdown).start()
+    
+    return {"message": "Application is shutting down. You can close this tab."}
