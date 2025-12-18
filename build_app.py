@@ -18,7 +18,7 @@ def build_app():
     static_dir = backend_dir / "static"
 
     print("--- 1. Building Frontend ---")
-    run_command("npm install", cwd=str(frontend_dir))
+    run_command("npm install --legacy-peer-deps", cwd=str(frontend_dir))
     run_command("npm run build", cwd=str(frontend_dir))
 
     print("--- 2. Preparing Backend Static Folder ---")
