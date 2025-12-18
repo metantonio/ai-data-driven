@@ -38,7 +38,7 @@ yarn-error.log*
 *.swo
 
 # Project specific
-example.db
-example_casino.db
+!example.db
+!example_casino.db
 backend/example.db
 *.db
