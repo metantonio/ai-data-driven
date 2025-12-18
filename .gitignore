@@ -39,5 +39,6 @@ yarn-error.log*
 
 # Project specific
 example.db
+example_casino.db
 backend/example.db
 *.db
