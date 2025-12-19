@@ -136,9 +136,9 @@ export default function EDAProgress() {
                                         {update.data.thought.map((q: string, i: number) => (
                                             <div key={i} className="flex gap-4 items-start group">
                                                 <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 group-hover:scale-150 transition-transform" />
-                                                <p className="text-slate-200 text-lg italic leading-relaxed font-light">
-                                                    "{q}"
-                                                </p>
+                                                <div className="text-slate-200 text-lg italic leading-relaxed font-light prose prose-invert prose-p:my-0 max-w-none">
+                                                    <ReactMarkdown>{q}</ReactMarkdown>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
