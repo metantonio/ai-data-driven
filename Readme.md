@@ -58,6 +58,9 @@ Note: on the .exe version, the relative path are:
 `sqlite:///../../example.db`
 `sqlite:///../../example_casino.db`
 
+Note: Try to use absolute path on the .exe version.
+
+
 ### SAP HANA
 `hana://user:password@host:port`
 - Ensure `hdbcli` and `sqlalchemy-hana` are installed (included in requirements.txt).
