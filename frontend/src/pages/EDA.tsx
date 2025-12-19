@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface Artifact {
     title?: string;
-    render_type: 'dataframe' | 'matplotlib' | 'plotly' | 'sweetviz' | 'dtale' | 'unknown';
+    render_type: 'dataframe' | 'matplotlib' | 'plotly' | 'sweetviz' | 'dtale' | 'sql_history' | 'unknown';
     data: any;
 }
 
@@ -27,6 +27,7 @@ const EDAPage: React.FC = () => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [connectionString, setConnectionString] = useState('sqlite:///../example.db');
+    const [useSqlAgent, setUseSqlAgent] = useState(false);
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +78,8 @@ const EDAPage: React.FC = () => {
                 : {
                     question: currentInput,
                     connection_string: connectionString,
-                    model_name: "gpt-4-turbo"
+                    model_name: "gpt-4-turbo",
+                    use_sql_agent: useSqlAgent
                 };
 
             const response = await api.post(endpoint, payload);
@@ -108,6 +110,9 @@ const EDAPage: React.FC = () => {
                 }
                 if (rawArtifacts.outlier_plot) {
                     artifactList.push({ title: 'Outlier Detection', render_type: 'matplotlib', data: rawArtifacts.outlier_plot });
+                }
+                if (rawArtifacts.sql_history) {
+                    artifactList.push({ title: 'SQL Agent History', render_type: 'sql_history', data: rawArtifacts.sql_history });
                 }
             }
 
@@ -183,6 +188,33 @@ const EDAPage: React.FC = () => {
                         />
                     </div>
                 );
+            case 'sql_history':
+                return (
+                    <div key={idx} className="my-4 p-4 rounded-xl bg-slate-900/50 border border-slate-700/50">
+                        <h4 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
+                            🤖 Agent Execution History
+                        </h4>
+                        <div className="space-y-3">
+                            {artifact.data.map((attempt: any, i: number) => (
+                                <div key={i} className={`p-3 rounded-lg border ${attempt.status === 'success' ? 'bg-green-900/20 border-green-700/50' : 'bg-red-900/20 border-red-700/50'}`}>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className={`text-xs font-bold uppercase ${attempt.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                                            Attempt {attempt.attempt}: {attempt.status}
+                                        </span>
+                                    </div>
+                                    <div className="bg-slate-950/50 p-2 rounded border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto">
+                                        {attempt.sql}
+                                    </div>
+                                    {attempt.error && (
+                                        <div className="mt-2 text-xs text-red-400 font-mono">
+                                            Error: {attempt.error}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
             default:
                 return <div key={idx} className="text-red-400">Unknown artifact type: {artifact.render_type}</div>;
         }
@@ -225,6 +257,19 @@ const EDAPage: React.FC = () => {
                         placeholder="sqlite:///../example.db"
                     />
                 </div>
+            </div>
+
+            {/* SQL Agent Toggle */}
+            <div className="mb-2 max-w-4xl mx-auto w-full flex justify-end">
+                <label className="flex items-center gap-2 cursor-pointer bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50 hover:bg-slate-700/50 transition-all">
+                    <input
+                        type="checkbox"
+                        checked={useSqlAgent}
+                        onChange={(e) => setUseSqlAgent(e.target.checked)}
+                        className="form-checkbox h-4 w-4 text-cyan-500 rounded border-slate-600 bg-slate-700 focus:ring-cyan-500 focus:ring-offset-slate-900"
+                    />
+                    <span className="text-xs font-medium text-cyan-400">Enable Agentic SQL Mode</span>
+                </label>
             </div>
 
             {/* Chat Messages */}

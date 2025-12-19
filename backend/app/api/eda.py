@@ -14,6 +14,7 @@ class EDARequest(BaseModel):
     question: str
     connection_string: str
     query: Optional[str] = None
+    use_sql_agent: Optional[bool] = False
 
 class ReplyRequest(BaseModel):
     question: str
@@ -36,6 +37,10 @@ async def chat_eda(request: EDARequest):
         if any(word in request.question.lower() for word in ['show tables', 'list tables', 'available tables', 'what tables']):
             result = service.show_available_tables(request.connection_string)
             return result
+            
+        # SQL Agent execution
+        if request.use_sql_agent:
+            return service.generate_sql_with_retry(request.connection_string, request.question)
         
         # Load Data
         df = load_data_from_db(request.connection_string, request.query)

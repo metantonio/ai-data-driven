@@ -125,6 +125,142 @@ Respond with just the interpreted question, nothing else."""
         if "Now the user asks:" in question:
             return question.split("Now the user asks:")[-1].strip()
         return question
+
+    def generate_sql_with_retry(self, connection_string: str, question: str) -> Dict[str, Any]:
+        """
+        Generate SQL query, execute it, and retry on error (max 3 times).
+        """
+        import pandas as pd
+        from sqlalchemy import create_engine
+        
+        # 1. Get Schema Context
+        schema_context = self._get_schema_info(connection_string)
+        
+        history = []
+        max_retries = 3
+        last_error = None
+        current_sql = ""
+        
+        # We try initial attempt + max_retries
+        for attempt in range(max_retries + 1):
+            # Generate SQL
+            prompt = self._build_sql_prompt(question, schema_context, connection_string, history)
+            current_sql = self._call_llm(prompt)
+            
+            # Clean SQL
+            current_sql = current_sql.replace("```sql", "").replace("```", "").strip()
+            
+            # Basic validation
+            if not current_sql:
+                continue
+                
+            try:
+                print(f"[EDA] Executing SQL Attempt {attempt+1}: {current_sql}")
+                # Execute
+                engine = create_engine(connection_string)
+                
+                # Safety check for destructive operations if possible, but for now rely on prompt/user
+                if any(keyword in current_sql.upper() for keyword in ["DROP ", "DELETE ", "UPDATE ", "INSERT ", "ALTER ", "TRUNCATE "]):
+                     raise ValueError("Destructive queries (DROP, DELETE, UPDATE, etc.) are not allowed.")
+
+                df = pd.read_sql(current_sql, engine)
+                
+                # Success!
+                history.append({
+                    "attempt": attempt + 1,
+                    "sql": current_sql,
+                    "status": "success",
+                    "error": None
+                })
+                
+                # Return result
+                message = f"## SQL Analysis Successful\n\n**Query executed:**\n```sql\n{current_sql}\n```\n\nResult has {len(df)} rows."
+                
+                artifacts = {
+                    'describe_df': df.head(100).to_dict('records'), # Limit for UI display
+                    'sql_history': history,
+                    'executed_sql': current_sql
+                }
+                
+                return {
+                    'ai_message': message,
+                    'tool_calls': ['generate_sql_with_retry'],
+                    'artifacts': artifacts
+                }
+                
+            except Exception as e:
+                # Failure
+                last_error = str(e)
+                print(f"[EDA] SQL Attempt {attempt + 1} failed: {last_error}")
+                history.append({
+                    "attempt": attempt + 1,
+                    "sql": current_sql,
+                    "status": "error",
+                    "error": last_error
+                })
+        
+        # If we get here, all retries failed
+        message = f"❌ **Failed to generate valid SQL after {max_retries + 1} attempts.**\n\n**Last error:** {last_error}\n\n**Final Query Attempt:**\n```sql\n{current_sql}\n```"
+        return {
+            'ai_message': message,
+            'tool_calls': ['generate_sql_with_retry'],
+            'artifacts': {'sql_history': history}
+        }
+
+    def _get_schema_info(self, connection_string: str) -> str:
+        """
+        Introspect database to get schema info for the LLM.
+        """
+        from sqlalchemy import create_engine, inspect
+        try:
+            engine = create_engine(connection_string)
+            inspector = inspect(engine)
+            
+            schema_info = []
+            for table_name in inspector.get_table_names():
+                try:
+                    columns = inspector.get_columns(table_name)
+                    cols_desc = ", ".join([f"{col['name']} ({str(col['type'])})" for col in columns])
+                    schema_info.append(f"Table: {table_name}\nColumns: {cols_desc}")
+                except Exception as e:
+                    schema_info.append(f"Table: {table_name} (Error reading columns: {e})")
+            
+            return "\\n\\n".join(schema_info)
+        except Exception as e:
+            return f"Error retrieving schema: {str(e)}"
+
+    def _build_sql_prompt(self, question: str, schema_context: str, connection_string: str, history: List[Dict]) -> str:
+        """
+        Build prompt for SQL generation with history context.
+        """
+        dialect = "SQLite" # Default
+        if "postgresql" in connection_string: dialect = "PostgreSQL"
+        elif "mysql" in connection_string: dialect = "MySQL"
+        elif "oracle" in connection_string: dialect = "Oracle"
+        elif "mssql" in connection_string: dialect = "SQL Server"
+        
+        prompt = f"""You are an expert SQL Data Analyst. Your task is to generate a valid {dialect} SQL query to answer the user's question.
+        
+Database Schema:
+{schema_context}
+
+User Question: {question}
+
+"""
+        if history:
+            prompt += "\nPrevious Attempts and Errors (Fix these errors):\n"
+            for item in history:
+                if item['status'] == 'error':
+                    prompt += f"- Attempt {item['attempt']}:\n  Query: {item['sql']}\n  Error: {item['error']}\n"
+            prompt += "\nPlease fix the errors from the previous attempts and provide a corrected query.\n"
+            
+        prompt += """
+Return ONLY the SQL query. Do not include markdown code blocks (```sql), explanations, or any other text. Start the response directly with the SQL query.
+Important:
+- Use only read-only `SELECT` queries.
+- Limit results to 100 rows if checking samples, unless aggregation is requested.
+"""
+        return prompt
     
     def show_available_tables(self, connection_string: str) -> Dict[str, Any]:
         """
@@ -242,13 +378,13 @@ Respond with just the interpreted question, nothing else."""
         
         # Create context for LLM
         data_context = f"""Dataset Information:
-- Shape: {n_rows} rows × {n_cols} columns
+- Shape: {n_rows} rows x {n_cols} columns
 - Numeric columns: {', '.join(numeric_cols[:5])}
 - Categorical columns: {', '.join(categorical_cols[:5])}
 - Sample data (first 3 rows): {df.head(3).to_dict('records')}
 """
         
-        prompt = f"""You are an expert data analyst helping a user understand their data.
+        prompt = f'''You are an expert data analyst helping a user understand their data.
 
 Previous Context:
 {context}
@@ -260,7 +396,7 @@ User's Follow-up Question:
 
 Provide a helpful, insightful response to the user's follow-up question. Be specific and reference actual values from the dataset when relevant. Keep your response concise (2-3 paragraphs max).
 
-If the question asks "why" or requests explanation, provide data-driven insights based on the statistics and patterns you can see."""
+If the question asks "why" or requests explanation, provide data-driven insights based on the statistics and patterns you can see.'''
 
         response_text = self._call_llm(prompt)
         
@@ -284,7 +420,7 @@ If the question asks "why" or requests explanation, provide data-driven insights
         # Generate description
         message = f"""## Dataset Overview
 
-**Shape:** {n_rows} rows × {n_cols} columns
+**Shape:** {n_rows} rows x {n_cols} columns
 
 **Column Types:**
 - Numeric columns ({len(numeric_cols)}): {', '.join(numeric_cols[:5])}{'...' if len(numeric_cols) > 5 else ''}
@@ -292,7 +428,7 @@ If the question asks "why" or requests explanation, provide data-driven insights
 
 **Missing Values:** {df.isnull().sum().sum()} total missing values
 
-**Memory Usage:** {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB
+**Memory Usage:** {(df.memory_usage(deep=True).sum() / 1048576):.2f} MB
 """
         
         # Statistical summary
