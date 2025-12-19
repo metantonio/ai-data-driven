@@ -36,6 +36,7 @@ class SchemaAnalysisAgent:
         
         return {
             "raw_schema": schema_summary,
+            "schema_context": inspector.get_llm_schema_context(),
             "analysis": analysis,
             "connection_string": connection_string
         }
@@ -116,6 +117,7 @@ class SchemaAnalysisAgent:
         
         return {
             "raw_schema": schema_summary,
+            "schema_context": inspector.get_llm_schema_context(),
             "analysis": analysis,
             "connection_string": connection_string,
             "user_comments": user_comments,

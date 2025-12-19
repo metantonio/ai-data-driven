@@ -31,22 +31,26 @@ class AutomaticEDAAgent:
                 yield {"status": "info", "message": "Crafting custom SQL query for your objective...", "data": None}
                 # Get schema context for SQL generation
                 inspector = DatabaseInspector(resolved_connection_string)
-                schema_summary = inspector.get_schema_summary()
+                schema_context = inspector.get_llm_schema_context()
                 
                 sql_prompt = f"""
-                You are a SQL expert. Based on the following database schema and the user's Machine Learning objective, generate a single SQL SELECT query that joins necessary tables and selects relevant columns to build a dataset for this model.
+                You are a SQL expert and Data Scientist. Based on the following database schema and the user's Machine Learning objective, generate a single SQL SELECT query that joins necessary tables and selects relevant columns to build a dataset for this model.
                 
                 OBJECTIVE: {ml_objective}
                 ALGORITHM: {algorithm_type}
                 USER CONTEXT: {json.dumps(user_comments)}
-                SCHEMA: {json.dumps(schema_summary)}
+                
+                {schema_context}
                 
                 RULES:
                 1. Output ONLY the SQL query. No explanations.
                 2. Use the correct dialect for this connection: {resolved_connection_string}
-                3. JOIN tables if necessary to fulfill the objective.
-                4. Limit the result to 2000 rows for EDA performance.
-                5. If you cannot fulfill the objective with the given schema, return a generic "SELECT * FROM [main_table] LIMIT 2000" and explain why.
+                3. JOIN tables if necessary to fulfill the objective. 
+                4. CRITICAL: Only use columns that EXPLICITLY exist in the SCHEMA above. DO NOT guess column names.
+                5. CRITICAL: To join tables, use the columns listed in "FOREIGN KEYS" if available. If no foreign keys are defined, look for columns with the same name (e.g. user_id) but VERIFY they exist in both tables.
+                6. Prefer LEFT JOIN if you are unsure about record existence, or INNER JOIN if a strict relationship is known.
+                7. Limit the result to 2000 rows for EDA performance (e.g., LIMIT 2000).
+                8. If you absolutely cannot fulfill the objective with the given schema (e.g. missing critical columns), return a generic "SELECT * FROM [main_table] LIMIT 2000" and explain why as a comment inside the SQL.
                 """
                 try:
                     query = self.llm.generate_response(sql_prompt).strip()

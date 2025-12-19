@@ -17,7 +17,7 @@ class ErrorAnalysisAgent:
         {schema_analysis.get('analysis', 'N/A')}
 
         Raw Schema Info:
-        {json.dumps(schema_analysis.get('raw_schema', {}))}
+        {schema_analysis.get('schema_context', str(schema_analysis.get('raw_schema', '')))}
 
         Error Message (stderr):
         {stderr}

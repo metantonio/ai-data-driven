@@ -82,6 +82,36 @@ class DatabaseInspector:
 
         self.inspector = inspect(self.engine)
 
+    def get_llm_schema_context(self) -> str:
+        """
+        Returns a text-based representation of the schema specifically formatted for LLM consumption.
+        Focuses on table names, columns, and foreign keys in a structured format.
+        """
+        summary = self.get_schema_summary()
+        context_lines = ["DATABASE SCHEMA:"]
+        
+        for table_name, table_info in summary["tables"].items():
+            context_lines.append(f"\nTABLE: {table_name}")
+            
+            # Columns
+            col_strings = []
+            for col in table_info["columns"]:
+                pk_indicator = " (PRIMARY KEY)" if col.get("primary_key") else ""
+                col_strings.append(f"  - {col['name']} ({col['type']}){pk_indicator}")
+            context_lines.extend(col_strings)
+            
+            # Foreign Keys
+            if table_info["foreign_keys"]:
+                context_lines.append("  FOREIGN KEYS:")
+                for fk in table_info["foreign_keys"]:
+                    # fk example: {'constrained_columns': ['user_id'], 'referred_table': 'users', 'referred_columns': ['id'], ...}
+                    constrained = ", ".join(fk['constrained_columns'])
+                    referred_table = fk['referred_table']
+                    referred_columns = ", ".join(fk['referred_columns'])
+                    context_lines.append(f"    - ({constrained}) REFERENCES {referred_table}({referred_columns})")
+        
+        return "\n".join(context_lines)
+
     def get_schema_summary(self) -> Dict[str, Any]:
         """
         Returns a dictionary summarizing the database schema:

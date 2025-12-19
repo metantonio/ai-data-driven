@@ -118,7 +118,7 @@ class CodeAdaptationAgent:
         {schema_analysis.get('user_comments', 'None provided')}
         
         Raw Schema:
-        {schema_analysis['raw_schema']}
+        {schema_analysis.get('schema_context', str(schema_analysis['raw_schema']))}
         
         Connection String:
         "{connection_string}"
@@ -145,6 +145,8 @@ class CodeAdaptationAgent:
            - DO NOT assume `casino_id` exists in `game_sessions`.
            - DO NOT assume `loyalty_tier` exists in `players`.
            - ONLY use columns listed in 'Raw Schema' below.
+           - To JOIN, prioritize columns in 'FOREIGN KEYS'. Otherwise, match on identical column names (e.g. `order_id`).
+           - VERIFY the column exists in BOTH tables before using it in a join.
         4. Implement 'preprocess_data' to handle missing values and encode categoricals. 
            - DO NOT use `df.fillna(inplace=True)`. Use `df[col] = df[col].fillna(...)`.
            - Use `df = pd.get_dummies(df, columns=[...])` for encoding.
@@ -195,14 +197,15 @@ class CodeAdaptationAgent:
         {schema_analysis.get('analysis', '')}
         
         Raw Schema:
-         {schema_analysis.get('raw_schema', '')}
+         {schema_analysis.get('schema_context', str(schema_analysis.get('raw_schema', '')))}
         
         tasks:
         1. Fix the error by strictly following the 'Raw Schema'.
         2. CRITICAL: Ensure `from sqlalchemy import create_engine` is used for `load_data`.
         3. CRITICAL: USE THIS CONNECTION STRING: {schema_analysis.get('connection_string', '')}
-        4. CRITICAL: DO NOT use `casino_id` or `loyalty_tier` unless they appear in the Raw Schema. 
-           Check if `id` is the join key instead (e.g., `gs.player_id = p.id`).
+        4. CRITICAL: Only use columns explicitly listed in 'Raw Schema'.
+        5. To JOIN, prioritize 'FOREIGN KEYS'. If not present, use identical column names (e.g., `user_id`) but VERIFY they exist in both tables. 
+           NEVER use a column that only exists in one table for a join key.
         5. If using Sklearn, convert column names to strings: `X.columns = X.columns.astype(str)`.
         6. Drop any non-numeric columns from features `X` before training.
         7. ENSURE `import sys` is at the very top. Use `sys.exit(1)` on failure.

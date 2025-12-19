@@ -5,6 +5,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import json
 
+"""This is a manual test, to verify that the pipeline works as expected. and compare with the AI generated pipeline.""" 
+
 DB_NAME = "example_casino.db"
 
 def load_data():
