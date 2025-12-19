@@ -1,3 +1,4 @@
+import os
 from scipy.optimize import linprog
 import pandas as pd
 import json
