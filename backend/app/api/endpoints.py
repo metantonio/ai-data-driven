@@ -18,6 +18,7 @@ class AdaptRequest(BaseModel):
     schema_analysis: dict
     algorithm_type: str = "linear_regression"
     eda_summary: Optional[str] = None
+    ml_objective: Optional[str] = None
 
 @router.post("/analyze-schema")
 async def analyze_schema_endpoint(request: AnalyzeRequest):
@@ -35,6 +36,7 @@ class AnalyzeWithCommentsRequest(BaseModel):
     user_comments: dict
     algorithm_type: str = "linear_regression"
     selected_tables: List[str] = []
+    ml_objective: Optional[str] = None
 
 class GetSchemaRequest(BaseModel):
     connection_string: str
@@ -57,7 +59,8 @@ def analyze_schema_with_comments(request: AnalyzeWithCommentsRequest):
             request.connection_string, 
             request.user_comments, 
             request.algorithm_type,
-            request.selected_tables
+            request.selected_tables,
+            request.ml_objective
         )
         return analysis
     except FileNotFoundError as e:
@@ -72,7 +75,8 @@ def adapt_code(request: AdaptRequest):
         result = agent.adapt(
             request.schema_analysis, 
             request.algorithm_type, 
-            request.eda_summary
+            request.eda_summary,
+            request.ml_objective
         )
         return {"code": result}
     except Exception as e:
@@ -89,6 +93,7 @@ class InsightsRequest(BaseModel):
     execution_report: dict
     schema_analysis: dict
     algorithm_type: str = "unknown"
+    ml_objective: Optional[str] = None
 
 @router.post("/execute-code")
 async def execute_code_endpoint(request: ExecuteRequest):
@@ -109,7 +114,7 @@ async def execute_code_endpoint(request: ExecuteRequest):
 def generate_insights(request: InsightsRequest):
     try:
         agent = InsightsAgent(llm_service)
-        insights = agent.generate_insights(request.execution_report, request.schema_analysis, request.algorithm_type)
+        insights = agent.generate_insights(request.execution_report, request.schema_analysis, request.algorithm_type, request.ml_objective)
         return {"insights": insights}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -118,6 +123,7 @@ class AutomaticEDARequest(BaseModel):
     connection_string: str
     user_comments: dict
     algorithm_type: str
+    ml_objective: Optional[str] = None
 
 @router.post("/automatic-eda")
 async def automatic_eda_endpoint(request: AutomaticEDARequest):
@@ -129,7 +135,8 @@ async def automatic_eda_endpoint(request: AutomaticEDARequest):
         async for update in agent.run_analysis(
             request.connection_string, 
             request.user_comments, 
-            request.algorithm_type
+            request.algorithm_type,
+            request.ml_objective
         ):
             yield json.dumps(update) + "\n"
 

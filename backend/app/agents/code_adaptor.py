@@ -9,7 +9,7 @@ class CodeAdaptationAgent:
         self.llm = llm_service
         self.template_path = template_path
 
-    def adapt(self, schema_analysis: dict, algorithm_type: str = "linear_regression", eda_summary: str = None) -> str:
+    def adapt(self, schema_analysis: dict, algorithm_type: str = "linear_regression", eda_summary: str = None, ml_objective: str = None) -> str:
         # Determine template based on algorithm_type
         template_map = {
             "linear_regression": "linear_regression.py",
@@ -89,12 +89,24 @@ class CodeAdaptationAgent:
         
         FAILURE TO USE ALL SELECTED TABLES IS UNACCEPTABLE.
         """
+
+        ml_objective_section = ""
+        if ml_objective:
+            ml_objective_section = f"""
+        USER ML OBJECTIVE:
+        "{ml_objective}"
+        
+        CRITICAL: The code you generate MUST aim to solve this specific objective. 
+        Adapt the SQL query in 'load_data' and the processing steps to select relevant features and target for this goal.
+        """
         
         prompt = f"""
         You are a Machine Learning Engineer. Adapt the following Python ML template to work with the described dataset.
         
         TARGET ALGORITHM TO IMPLEMENT: {algorithm_type.replace('_', ' ').upper()}
         (IMPORTANT: Follow the user's latest selection even if the EDA analysis mentions a different initial choice).
+
+        {ml_objective_section}
 
         Dataset Analysis:
         {schema_analysis['analysis']}
@@ -125,7 +137,7 @@ class CodeAdaptationAgent:
                # USE THIS EXACT STRING: {connection_string}
                engine = create_engine("{connection_string}")
                # DO NOT use sqlite3.connect(). USE the engine.
-               query = "SELECT * FROM table_name" # Use real tables from schema
+               query = "SELECT * FROM table_name" # Use real tables from schema, JOIN if needed for the objective
                return pd.read_sql_query(query, engine)
            ```
         3. CRITICAL: Check the schema for every table before joining.
@@ -136,7 +148,7 @@ class CodeAdaptationAgent:
         4. Implement 'preprocess_data' to handle missing values and encode categoricals. 
            - DO NOT use `df.fillna(inplace=True)`. Use `df[col] = df[col].fillna(...)`.
            - Use `df = pd.get_dummies(df, columns=[...])` for encoding.
-        5. Select the target column and ensure it is categorical/binary if this is a classification task.
+        5. Select the target column based on the objective and analysis, and ensure it is categorical/binary if this is a classification task.
         6. CRITICAL: At the end, print the JSON report using `print(json.dumps(report))` WITHOUT indent parameter.
            - DO NOT use `json.dumps(report, indent=2)` or any formatting.
            - The JSON MUST be on a SINGLE LINE for the parser to work.

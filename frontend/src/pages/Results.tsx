@@ -145,7 +145,7 @@ function CopyButton({ text, label }: { text: string, label?: string }) {
 export default function Results() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { schemaAnalysis, algorithmType, edaSummary } = location.state || {};
+    const { schemaAnalysis, algorithmType, edaSummary, mlObjective } = location.state || {};
 
     // State
     const [stage, setStage] = useState<'adapt' | 'execute' | 'insight' | 'done'>('adapt');
@@ -197,7 +197,7 @@ export default function Results() {
 
             if (!code) {
                 setStage('adapt');
-                const adaptRes = await adaptCode(schemaAnalysis, algorithmType, edaSummary);
+                const adaptRes = await adaptCode(schemaAnalysis, algorithmType, edaSummary, mlObjective);
                 if (controller.signal.aborted) return;
                 code = adaptRes.code;
             }
@@ -287,7 +287,7 @@ export default function Results() {
     const generateInsightsWrapper = async (execResult: any, analysis: any) => {
         if (execResult.report) {
             setStage('insight');
-            const insightRes = await generateInsights(execResult.report, analysis, algorithmType);
+            const insightRes = await generateInsights(execResult.report, analysis, algorithmType, mlObjective);
             setInsights(insightRes.insights);
             setStage('done');
 

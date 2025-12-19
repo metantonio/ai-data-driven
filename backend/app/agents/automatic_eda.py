@@ -12,7 +12,7 @@ class AutomaticEDAAgent:
         self.llm = llm_service
         self.eda_service = SimpleEDAService()
 
-    async def run_analysis(self, connection_string: str, user_comments: Dict[str, Any], algorithm_type: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def run_analysis(self, connection_string: str, user_comments: Dict[str, Any], algorithm_type: str, ml_objective: str = None) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Runs a comprehensive EDA and yields progress updates.
         """
@@ -22,7 +22,49 @@ class AutomaticEDAAgent:
             # Insight accumulation
             insights_summary = []
             yield {"status": "info", "message": "Loading data for analysis...", "data": None}
-            df = self._load_data(connection_string)
+            
+            # Resolve connection string early for both loading methods
+            from app.services.db_inspector import DatabaseInspector
+            resolved_connection_string = DatabaseInspector.resolve_connection_string(connection_string)
+            
+            if ml_objective:
+                yield {"status": "info", "message": "Crafting custom SQL query for your objective...", "data": None}
+                # Get schema context for SQL generation
+                inspector = DatabaseInspector(resolved_connection_string)
+                schema_summary = inspector.get_schema_summary()
+                
+                sql_prompt = f"""
+                You are a SQL expert. Based on the following database schema and the user's Machine Learning objective, generate a single SQL SELECT query that joins necessary tables and selects relevant columns to build a dataset for this model.
+                
+                OBJECTIVE: {ml_objective}
+                ALGORITHM: {algorithm_type}
+                USER CONTEXT: {json.dumps(user_comments)}
+                SCHEMA: {json.dumps(schema_summary)}
+                
+                RULES:
+                1. Output ONLY the SQL query. No explanations.
+                2. Use the correct dialect for this connection: {resolved_connection_string}
+                3. JOIN tables if necessary to fulfill the objective.
+                4. Limit the result to 2000 rows for EDA performance.
+                5. If you cannot fulfill the objective with the given schema, return a generic "SELECT * FROM [main_table] LIMIT 2000" and explain why.
+                """
+                try:
+                    query = self.llm.generate_response(sql_prompt).strip()
+                    # Clean markdown if present
+                    if "```sql" in query:
+                        query = query.split("```sql")[1].split("```")[0].strip()
+                    elif "```" in query:
+                        query = query.split("```")[1].split("```")[0].strip()
+                    
+                    df = pd.read_sql(query, create_engine(resolved_connection_string))
+                    yield {"status": "info", "message": f"Custom dataset loaded via objective-driven SQL.", "data": {"query": query}}
+                    insights_summary.append(f"Custom Dataset Query:\n```sql\n{query}\n```")
+                except Exception as e:
+                    yield {"status": "info", "message": f"Failed to generate custom SQL, falling back to default loading.", "data": {"error": str(e)}}
+                    df = self._load_data(resolved_connection_string)
+            else:
+                df = self._load_data(resolved_connection_string)
+
             if df.empty:
                 yield {"status": "error", "message": "No data found for analysis.", "data": None}
                 return
@@ -36,6 +78,7 @@ class AutomaticEDAAgent:
             question_prompt = f"""
             Based on these statistics: {json.dumps(stats['artifacts']['describe_df'][:5])}
             And the target algorithm: {algorithm_type}
+            {"And the ML Objective: " + ml_objective if ml_objective else ""}
             
             What are 2 critical questions you should ask yourself about the data quality for this task?
             Respond only with the 2 questions, one per line.
@@ -65,6 +108,7 @@ class AutomaticEDAAgent:
             insight_prompt = f"""
             Missing Data Report: {missing['ai_message']}
             Algorithm: {algorithm_type}
+            {"Objective: " + ml_objective if ml_objective else ""}
             
             As an AI Agent, what is your insight about how missing data affects the proposed {algorithm_type} model?
             Keep it very concise.
@@ -93,6 +137,7 @@ class AutomaticEDAAgent:
             corr_thought_prompt = f"""
             Correlation Summary: {corrs['ai_message']}
             Algorithm: {algorithm_type}
+            {"Objective: " + ml_objective if ml_objective else ""}
             
             What features seem most promising or problematic for {algorithm_type}?
             """
@@ -126,17 +171,18 @@ class AutomaticEDAAgent:
             You have analyzed the data. 
             User current choice: {algorithm_type}
             User context: {json.dumps(user_comments)}
+            {"User goal: " + ml_objective if ml_objective else ""}
             
             Available ML models in our system: {', '.join(available_models)}
-
-            Based on your EDA findings, suggest 2 other models from the 'Available ML models' list that might work better or complement the current choice.
+ 
+            Based on your EDA findings and the user objective, suggest 2 other models from the 'Available ML models' list that might work better or complement the current choice.
             
             Return a JSON list of objects: 
             [
               {{
                 "name": "Model technical name (must be one from the available list)", 
                 "display_name": "Human readable name",
-                "reason": "Why this model specifically given the data?"
+                "reason": "Why this model specifically given the data and objective?"
               }}
             ]
             """
@@ -173,9 +219,6 @@ class AutomaticEDAAgent:
             yield {"status": "error", "message": f"AI Agent Analysis failed: {str(e)}", "data": None}
 
     def _load_data(self, connection_string: str) -> pd.DataFrame:
-        from app.services.db_inspector import DatabaseInspector
-        connection_string = DatabaseInspector.resolve_connection_string(connection_string)
-        
         engine = create_engine(connection_string)
         inspector = sql_inspect(engine)
         tables = inspector.get_table_names()

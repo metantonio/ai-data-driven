@@ -37,21 +37,23 @@ export const getSchema = async (connectionString: string) => {
     return response.data;
 };
 
-export const analyzeSchemaWithComments = async (connectionString: string, userComments: Record<string, any>, algorithmType: string, selectedTables: string[] = []) => {
+export const analyzeSchemaWithComments = async (connectionString: string, userComments: Record<string, any>, algorithmType: string, selectedTables: string[] = [], mlObjective?: string) => {
     const response = await api.post('/analyze-schema-with-comments', {
         connection_string: connectionString,
         user_comments: userComments,
         algorithm_type: algorithmType,
-        selected_tables: selectedTables
+        selected_tables: selectedTables,
+        ml_objective: mlObjective
     });
     return response.data;
 };
 
-export const adaptCode = async (schemaAnalysis: SchemaAnalysis, algorithmType: string = "linear_regression", edaSummary?: string): Promise<{ code: string }> => {
+export const adaptCode = async (schemaAnalysis: SchemaAnalysis, algorithmType: string = "linear_regression", edaSummary?: string, mlObjective?: string): Promise<{ code: string }> => {
     const response = await api.post('/adapt-code', {
         schema_analysis: schemaAnalysis,
         algorithm_type: algorithmType,
-        eda_summary: edaSummary
+        eda_summary: edaSummary,
+        ml_objective: mlObjective
     });
     return response.data;
 };
@@ -106,11 +108,12 @@ export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpd
     }
 };
 
-export const generateInsights = async (executionReport: ExecutionReport, schemaAnalysis: SchemaAnalysis, algorithmType: string): Promise<{ insights: string }> => {
+export const generateInsights = async (executionReport: ExecutionReport, schemaAnalysis: SchemaAnalysis, algorithmType: string, mlObjective?: string): Promise<{ insights: string }> => {
     const response = await api.post('/generate-insights', {
         execution_report: executionReport,
         schema_analysis: schemaAnalysis,
-        algorithm_type: algorithmType
+        algorithm_type: algorithmType,
+        ml_objective: mlObjective
     });
     return response.data;
 };
@@ -125,7 +128,8 @@ export const runAutomaticEDAStream = async (
     userComments: Record<string, any>,
     algorithmType: string,
     onUpdate: (data: any) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    mlObjective?: string
 ) => {
     const response = await fetch(`${API_BASE_URL}/automatic-eda`, {
         method: 'POST',
@@ -135,7 +139,8 @@ export const runAutomaticEDAStream = async (
         body: JSON.stringify({
             connection_string: connectionString,
             user_comments: userComments,
-            algorithm_type: algorithmType
+            algorithm_type: algorithmType,
+            ml_objective: mlObjective
         }),
         signal
     });

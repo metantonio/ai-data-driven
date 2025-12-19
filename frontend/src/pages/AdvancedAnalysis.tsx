@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Save, Database, Table, MessageSquare, Loader } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Database, Table, MessageSquare, Loader, Brain } from 'lucide-react';
 import { analyzeSchemaWithComments } from '../api/client';
 
 export default function AdvancedAnalysis() {
@@ -15,6 +15,7 @@ export default function AdvancedAnalysis() {
     );
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mlObjective, setMlObjective] = useState('');
 
     if (!location.state) {
         return <div className="text-white p-10">Invalid State. Please return to Dashboard.</div>;
@@ -42,13 +43,14 @@ export default function AdvancedAnalysis() {
         setLoading(true);
         setError(null);
         try {
-            const data = await analyzeSchemaWithComments(connectionString, comments, algorithmType, selectedTables);
+            const data = await analyzeSchemaWithComments(connectionString, comments, algorithmType, selectedTables, mlObjective);
             navigate('/eda-progress', {
                 state: {
                     schemaAnalysis: data,
                     connectionString,
                     algorithmType,
-                    userComments: comments
+                    userComments: comments,
+                    mlObjective
                 }
             });
         } catch (err: any) {
@@ -72,6 +74,28 @@ export default function AdvancedAnalysis() {
                         Back to Dashboard
                     </button>
                     <h1 className="text-2xl font-bold text-white">Advanced Analysis Configuration</h1>
+                </div>
+
+                {/* ML Objective Section */}
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="p-3 bg-indigo-500/10 rounded-lg">
+                            <Brain className="h-6 w-6 text-indigo-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-white">Project Objective</h2>
+                            <p className="text-slate-400 text-sm">Describe what you want to achieve. The AI will adapt the SQL and code to fit this goal.</p>
+                        </div>
+                    </div>
+                    <div className="relative">
+                        <MessageSquare className="absolute top-4 left-4 h-5 w-5 text-slate-500" />
+                        <textarea
+                            placeholder="e.g. 'Predict customer churn using transaction history and demographics', 'Identify high-value players in the last 30 days'..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-12 pr-4 text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[100px]"
+                            value={mlObjective}
+                            onChange={(e) => setMlObjective(e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">

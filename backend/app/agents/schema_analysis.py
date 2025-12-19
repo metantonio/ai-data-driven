@@ -40,7 +40,7 @@ class SchemaAnalysisAgent:
             "connection_string": connection_string
         }
 
-    def analyze_with_comments(self, connection_string: str, user_comments: dict, algorithm_type: str = "linear_regression", selected_tables: list = None) -> dict:
+    def analyze_with_comments(self, connection_string: str, user_comments: dict, algorithm_type: str = "linear_regression", selected_tables: list = None, ml_objective: str = None) -> dict:
         # Resolve connection string early
         connection_string = DatabaseInspector.resolve_connection_string(connection_string)
         
@@ -75,9 +75,20 @@ class SchemaAnalysisAgent:
         - How each table contributes features to the model
         - Why this multi-table approach makes sense for {algorithm_type}
         """
+
+        ml_objective_section = ""
+        if ml_objective:
+            ml_objective_section = f"""
+        USER ML OBJECTIVE:
+        "{ml_objective}"
+        
+        Analyze the schema SPECIFICALLY with this objective in mind. How do these tables and columns help achieve this goal?
+        """
         
         prompt = f"""
         You are an expert Data Scientist. Analyze the following database schema for a '{algorithm_type}' task.
+        
+        {ml_objective_section}
         
         User Comments on Data Dictionary:
         {user_comments}
@@ -92,7 +103,7 @@ class SchemaAnalysisAgent:
            - If Clustering: Identify numeric feature columns.
            - If Association Rules: Identify Transaction ID and Item ID.
            - If Optimization: Identify Constraints and Objectives.
-        3. Potential features and join paths relevant to this algorithm.
+        3. Potential features and join paths relevant to this algorithm and objective.
         
         IMPORTANT: Use the "User Comments" to strictly interpret the meaning of columns. 
         If a user says a column is a target or contains specific info, trust it over the variable name.
@@ -108,5 +119,6 @@ class SchemaAnalysisAgent:
             "analysis": analysis,
             "connection_string": connection_string,
             "user_comments": user_comments,
-            "selected_tables": selected_tables or []
+            "selected_tables": selected_tables or [],
+            "ml_objective": ml_objective
         }

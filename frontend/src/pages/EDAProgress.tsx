@@ -13,7 +13,7 @@ interface EDAUpdate {
 export default function EDAProgress() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { connectionString, userComments, algorithmType, schemaAnalysis } = location.state || {};
+    const { connectionString, userComments, algorithmType, schemaAnalysis, mlObjective } = location.state || {};
 
     const [updates, setUpdates] = useState<EDAUpdate[]>([]);
     const [currentStep, setCurrentStep] = useState<string>('');
@@ -64,7 +64,8 @@ export default function EDAProgress() {
                         setError(update.message);
                     }
                 },
-                controller.signal
+                controller.signal,
+                mlObjective
             );
         } catch (err: any) {
             if (err.name !== 'AbortError') {
@@ -79,7 +80,8 @@ export default function EDAProgress() {
                 schemaAnalysis,
                 connectionString,
                 algorithmType: selectedAlgorithm,
-                edaSummary
+                edaSummary,
+                mlObjective
             }
         });
     };
