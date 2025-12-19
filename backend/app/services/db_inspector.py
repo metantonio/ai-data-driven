@@ -22,16 +22,23 @@ class DatabaseInspector:
         # Try to resolve the path
         path_to_check = Path(original_path)
         
-        # If path doesn't exist, try common alternatives
-        if not path_to_check.exists():
+        # If relative, make it absolute if it exists or try alternatives
+        if not path_to_check.is_absolute():
+            # If it exists relative to CWD, make it absolute
+            if path_to_check.exists():
+                 return f"sqlite:///{path_to_check.absolute()}"
+
             alternatives = []
             # If frozen, the execution context is different
             if getattr(sys, 'frozen', False):
-                # The .exe is in backend/dist/, so ../../ might be the project root
-                # Original path might be ../example.db, we want to try ../../example.db
-                # simplified: try relative to executable
-                alternatives.append(Path(sys.executable).parent / ".." / ".." / original_path.replace("../", ""))
+                # The .exe is in backend/dist/, try relative to executable
                 alternatives.append(Path(sys.executable).parent / original_path)
+                # Try project root (relative to dist)
+                proj_root = Path(sys.executable).parent.parent.parent
+                alternatives.append(proj_root / original_path)
+                # Try next to .exe stripping any leading ../
+                base_name = original_path.replace("../", "")
+                alternatives.append(Path(sys.executable).parent / base_name)
             
             # Also try relative to current working directory
             alternatives.append(Path(os.getcwd()) / original_path)
@@ -56,7 +63,14 @@ class DatabaseInspector:
                 import os
                 if not os.path.exists(path):
                     abs_path = os.path.abspath(path)
-                    raise FileNotFoundError(f"Database file not found at: {abs_path}")
+                    cwd = os.getcwd()
+                    raise FileNotFoundError(
+                        f"Database file not found at: {abs_path}\n"
+                        f"Current working directory: {cwd}\n"
+                        f"Original connection string: {connection_string}\n"
+                        f"Tip: Use an absolute path like 'sqlite:///C:/full/path/to/database.db' "
+                        f"or ensure the relative path is correct from the executable location."
+                    )
         
         # Test connection immediately to fail fast
         try:

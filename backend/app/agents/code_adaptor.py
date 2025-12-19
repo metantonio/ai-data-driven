@@ -79,31 +79,32 @@ class CodeAdaptationAgent:
         Template Code:
         {template_code}
         
-        Tasks:
-        1. Implement 'load_data' to connect to the DB using the provided Connection String exactly. Use sqlalchemy. 
-           IMPORTANT: 
-           - ALWAYS include Primary Key/Foreign Key columns (e.g., 'id', or any linking columns found in the schema) for merging.
-           - ALWAYS include ALL columns needed for features (e.g., 'city', 'state', 'type', 'gender') in the SELECT statement.
-           - If connection string starts with 'hana://', ensure to use sqlalchemy-hana dialect. 
-             Note: 'hdbcli' must be installed.
-           - For large datasets in Cloud DBs (Postgres/HANA), consider using 'LIMIT' for initial testing if not specified otherwise.
-        2. Implement 'preprocess_data' to handle missing values and encode categoricals based on the schema types. 
-           - CRITICAL: DO NOT hallucinate column names. ONLY use columns explicitly listed in the schema provided for each table.
-           - DO NOT assume columns like 'loyalty_tier', 'member_status', 'casino_id', 'player_name', or 'tier' exist unless you see them in the specific table schema.
-           - Check `df.columns` before dropping, selecting, or using them in logic. If any target or feature column is missing, fail with a clear diagnostic.
-           - IF you need to merge tables, identify the correct keys from THE PROVIDED SCHEMA. DO NOT assume junction columns exist unless visible.
-           - DO NOT use `df[col] = pd.get_dummies(df[col])`. This will error if there are multiple categories. 
-           - INSTEAD: Use `df = pd.get_dummies(df, columns=[col1, col2...])` or a Scikit-Learn `OneHotEncoder`.
-           - Avoid deprecated pandas methods: Use `df.ffill()` or `df.bfill()` instead of `df.fillna(method='ffill')`.
-           - If using `.fillna(inplace=True)`, be aware it's deprecated for some pandas versions. Use `df[col] = df[col].fillna(...)` to be safe.
-        3. Select the most likely target column from the schema for 'train_model'.
-        4. Ensure the model is saved to 'models/model.joblib' (or unique name) and 'model_path' is in the JSON report.
-        5. DO NOT wrap the entire logic in a try-except block that prints a custom message. Allow Python's standard traceback or the template's main try-except to handle errors so the process exits with code 1.
-        6. DO NOT print the dataframe to stdout (e.g., no `print(df)`). The ONLY output at the end must be the JSON `report`. Printing large text will break the JSON parsing.
-        7. IMPORTANT: For OneHotEncoder, use `sparse_output=False` (scikit-learn >= 1.2) instead of `sparse=False`.
-        8. IMPORTANT: If the algorithm is a CLASSIFIER (e.g., LogisticRegression, RandomForestClassifier) but the target column is CONTINUOUS (float/int with many unique values), you MUST convert it to binary/categorical classes in `preprocess_data`. Example: `df['target'] = (df['target'] > 0).astype(int)`. Do not try to predict continuous values with a classifier.
-        
-        Output the full valid Python code.
+        tasks:
+        1. CRITICAL: Ensure `import sys`, `import os`, and `from sqlalchemy import create_engine` are at the very top.
+        2. Implement 'load_data' using the provided Connection String exactly.
+           ```python
+           # CORRECT IMPLEMENTATION EXAMPLE:
+           from sqlalchemy import create_engine
+           def load_data():
+               # USE THIS EXACT STRING: {connection_string}
+               engine = create_engine("{connection_string}")
+               # DO NOT use sqlite3.connect(). USE the engine.
+               query = "SELECT * FROM table_name" # Use real tables from schema
+               return pd.read_sql_query(query, engine)
+           ```
+        3. CRITICAL: Check the schema for every table before joining.
+           - {f"CONNECTION STRING TO USE: {connection_string}"}
+           - DO NOT assume `casino_id` exists in `game_sessions`.
+           - DO NOT assume `loyalty_tier` exists in `players`.
+           - ONLY use columns listed in 'Raw Schema' below.
+        4. Implement 'preprocess_data' to handle missing values and encode categoricals. 
+           - DO NOT use `df.fillna(inplace=True)`. Use `df[col] = df[col].fillna(...)`.
+           - Use `df = pd.get_dummies(df, columns=[...])` for encoding.
+        5. Select the target column and ensure it is categorical/binary if this is a classification task.
+        6. CRITICAL: At the end, print the JSON report using `print(json.dumps(report))` WITHOUT indent parameter.
+           - DO NOT use `json.dumps(report, indent=2)` or any formatting.
+           - The JSON MUST be on a SINGLE LINE for the parser to work.
+        7. Output ONLY the full valid Python code. No explanations.
         """
         
         adapted_code = self.llm.generate_response(prompt)
@@ -140,19 +141,17 @@ class CodeAdaptationAgent:
          {schema_analysis.get('raw_schema', '')}
         
         tasks:
-        1. Analyze the error, the AI summary (if provided), and the code.
-        2. Fix the code to resolve the error. Ensure imports are correct and data types are handled.
-        3. IMPORTANT: If using sklearn, ensure X.columns are converted to strings (X.columns = X.columns.astype(str)). 
-        4. IMPORTANT: Drop any Datetime/Timestamp columns from X, or convert them to numeric (e.g. .astype(int) / 10**9). Sklearn cannot handle Timestamps.
-        5. IF error is related to missing columns/tables: STRICTLY check the 'Raw Schema' provided above and use the exact column names found there.
-           - NOTE: 'casinos' table usually has 'id', not 'casino_id'. 'games' table has 'id', not 'game_id'. Check your merge keys carefully.
-        6. IF clustering (kmeans/hierarchical), ensure to use the provided 'optimize_clusters' or 'optimize_hierarchical' functions in the template logic instead of hardcoding n_clusters.
-        7. IGNORE DeprecationWarnings or FutureWarnings unless they are the direct cause of the crash. Focus on the 'Traceback' and the final 'Exception'.
-        8. CRITICAL: DO NOT wrap the code in a `try-except` block that prints an error and continues or exits with 0. Let the script crash with a traceback, or use `traceback.print_exc(); sys.exit(1)` if you must catch it. The system needs a non-zero exit code to know it failed.
-        9. IMPORTANT: If the error is regarding 'OneHotEncoder' and 'sparse', replace `sparse=False` with `sparse_output=False`.
-        10. IMPORTANT: Avoid the error "Columns must be same length as key" by NOT assigning get_dummies to a single column. Use `df = pd.get_dummies(df, columns=['col_name'])` instead.
-        11. IF the error is "Classification metrics can't handle a mix of continuous and binary targets", it means you are using a Classifier on a Regression target. Fix this by converting the target variable `y` to binary (e.g., `y = (y > y.mean()).astype(int)`) or using a Regressor instead.
-        11. Output the full valid Python code.
+        1. Fix the error by strictly following the 'Raw Schema'.
+        2. CRITICAL: Ensure `from sqlalchemy import create_engine` is used for `load_data`.
+        3. CRITICAL: USE THIS CONNECTION STRING: {schema_analysis.get('connection_string', '')}
+        4. CRITICAL: DO NOT use `casino_id` or `loyalty_tier` unless they appear in the Raw Schema. 
+           Check if `id` is the join key instead (e.g., `gs.player_id = p.id`).
+        5. If using Sklearn, convert column names to strings: `X.columns = X.columns.astype(str)`.
+        6. Drop any non-numeric columns from features `X` before training.
+        7. ENSURE `import sys` is at the very top. Use `sys.exit(1)` on failure.
+        8. CRITICAL: Ensure the final JSON report is printed with `print(json.dumps(report))` WITHOUT indent.
+           - DO NOT use `json.dumps(report, indent=2)`. The JSON must be on ONE LINE.
+        9. Output ONLY the full valid Python code.
         """
         
         fixed_code_response = self.llm.generate_response(prompt)
