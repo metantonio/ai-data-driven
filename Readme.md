@@ -54,6 +54,10 @@ npm run dev
 `sqlite:///../example.db`
 `sqlite:///../example_casino.db`
 
+Note: on the .exe version, the relative path are:
+`sqlite:///../../example.db`
+`sqlite:///../../example_casino.db`
+
 ### SAP HANA
 `hana://user:password@host:port`
 - Ensure `hdbcli` and `sqlalchemy-hana` are installed (included in requirements.txt).
