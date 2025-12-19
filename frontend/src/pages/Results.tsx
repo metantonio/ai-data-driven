@@ -458,7 +458,7 @@ export default function Results() {
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
-                                    {Object.entries(executionResult.report.metrics).map(([key, value]) => (
+                                    {executionResult.report.metrics && Object.entries(executionResult.report.metrics).map(([key, value]) => (
                                         <div key={key} className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
                                             <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">{key.replace(/_/g, ' ')}</div>
                                             <div className="text-2xl font-bold text-white">

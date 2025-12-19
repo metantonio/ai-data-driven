@@ -8,7 +8,7 @@ function ConnectionGuide({ onSelect }: { onSelect: (val: string) => void }) {
 
     const examples = [
         { label: 'SQLite (example)', value: 'sqlite:///../example.db', desc: 'Relative path to root project directory.' },
-        { label: 'SQLite (example)', value: 'C:\\Repositories\\ai-data-driven\\example.db', desc: 'Absolute path to root project directory.' },
+        { label: 'SQLite (example)', value: 'C:/Repositories/ai-data-driven/example.db', desc: 'Absolute path to root project directory.' },
         { label: 'SQLite Casino', value: 'sqlite:///../example_casino.db', desc: 'Sample casino dataset.' },
         { label: 'SAP HANA', value: 'hana://user:password@host:port', desc: 'Port is usually 3xx15 (xx=instance).' },
         { label: 'PostgreSQL', value: 'postgresql://user:password@host:port/dbname', desc: 'Standard PostgreSQL connection.' },
