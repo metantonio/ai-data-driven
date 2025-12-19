@@ -182,6 +182,15 @@ Respond with just the interpreted question, nothing else."""
                     'executed_sql': current_sql
                 }
                 
+                # Call Visualization Agent
+                try:
+                    viz_result = self._decide_and_generate_visualization(df, question)
+                    if viz_result:
+                        artifacts['generated_plot'] = viz_result['plot']
+                        message += f"\n\n📊 **Visualization generated:** {viz_result['title']}"
+                except Exception as e:
+                    print(f"Visualization agent failed: {e}")
+                
                 return {
                     'ai_message': message,
                     'tool_calls': ['generate_sql_with_retry'],
@@ -261,6 +270,124 @@ Important:
 - Limit results to 100 rows if checking samples, unless aggregation is requested.
 """
         return prompt
+
+    def _decide_and_generate_visualization(self, df: pd.DataFrame, question: str) -> Dict[str, Any]:
+        """
+        Visualization Agent: Decides if a plot is needed and generates it.
+        """
+        if df.empty or len(df) < 2:
+            return None
+            
+        import json
+        
+        # 1. Ask LLM what to plot
+        prompt = self._build_visualization_prompt(df, question)
+        response = self._call_llm(prompt)
+        
+        try:
+            # Clean response to get JSON
+            json_str = response.replace("```json", "").replace("```", "").strip()
+            # Find JSON object start/end if extra text exists
+            if "{" in json_str:
+                json_str = json_str[json_str.find("{"):json_str.rfind("}")+1]
+                
+            viz_plan = json.loads(json_str)
+            
+            if not viz_plan.get("visualize", False):
+                return None
+                
+            print(f"[EDA] Visualization Agent planned: {viz_plan}")
+            
+            # 2. Generate Plot
+            return self._generate_plot_from_plan(df, viz_plan)
+            
+        except Exception as e:
+            print(f"[EDA] Visualization decision failed: {e}")
+            return None
+
+    def _build_visualization_prompt(self, df: pd.DataFrame, question: str) -> str:
+        columns = list(df.columns)
+        dtypes = {col: str(df[col].dtype) for col in df.columns}
+        sample = df.head(3).to_dict('records')
+        
+        prompt = f"""You are a Data Visualization Expert.
+User Question: "{question}"
+Data Result Columns: {columns}
+Data Types: {dtypes}
+Sample Data: {sample}
+
+Decide if a visualization is appropriate to augment the table data.
+If yes, choose the BEST chart type from: 'bar', 'line', 'scatter', 'pie', 'histogram', 'box'.
+
+Return a JSON object ONLY (no markdown):
+{{
+  "visualize": true/false,
+  "type": "chart_type",
+  "x": "column_for_x_axis",
+  "y": "column_for_y_axis",
+  "hue": "optional_column_for_color_grouping",
+  "title": "Chart Title",
+  "reason": "Why this chart?"
+}}
+"""
+        return prompt
+
+    def _generate_plot_from_plan(self, df: pd.DataFrame, plan: Dict[str, Any]) -> Dict[str, Any]:
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        try:
+            chart_type = plan.get("type")
+            x = plan.get("x")
+            y = plan.get("y")
+            hue = plan.get("hue") if plan.get("hue") in df.columns else None
+            
+            if chart_type == 'bar':
+                sns.barplot(data=df, x=x, y=y, hue=hue, ax=ax, palette='viridis')
+            elif chart_type == 'line':
+                sns.lineplot(data=df, x=x, y=y, hue=hue, ax=ax)
+            elif chart_type == 'scatter':
+                sns.scatterplot(data=df, x=x, y=y, hue=hue, ax=ax)
+            elif chart_type == 'histogram':
+                sns.histplot(data=df, x=x, hue=hue, ax=ax, kde=True)
+            elif chart_type == 'box':
+                sns.boxplot(data=df, x=x, y=y, hue=hue, ax=ax)
+            elif chart_type == 'pie':
+                if y and x:
+                    plt.pie(df[y], labels=df[x], autopct='%1.1f%%')
+                else:
+                    return None
+            else:
+                return None
+                
+            ax.set_title(plan.get("title", f"{chart_type.title()} Plot"))
+            ax.set_facecolor('#0f172a')
+            fig.patch.set_facecolor('#0f172a')
+            
+            # Styling
+            ax.tick_params(colors='#cbd5e1')
+            ax.xaxis.label.set_color('#cbd5e1')
+            ax.yaxis.label.set_color('#cbd5e1')
+            ax.title.set_color('#22d3ee')
+            if ax.get_legend():
+                plt.setp(ax.get_legend().get_texts(), color='#cbd5e1')
+                
+            plt.tight_layout()
+            
+            img = self._fig_to_base64(fig)
+            plt.close(fig)
+            
+            return {
+                "plot": img,
+                "title": plan.get("title")
+            }
+            
+        except Exception as e:
+            print(f"[EDA] Plot generation failed: {e}")
+            plt.close(fig)
+            return None
     
     def show_available_tables(self, connection_string: str) -> Dict[str, Any]:
         """

@@ -114,6 +114,9 @@ const EDAPage: React.FC = () => {
                 if (rawArtifacts.sql_history) {
                     artifactList.push({ title: 'SQL Agent History', render_type: 'sql_history', data: rawArtifacts.sql_history });
                 }
+                if (rawArtifacts.generated_plot) {
+                    artifactList.push({ title: 'AI Generated Analysis', render_type: 'matplotlib', data: rawArtifacts.generated_plot });
+                }
             }
 
             const aiMessage: Message = {

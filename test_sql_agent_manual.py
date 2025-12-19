@@ -24,32 +24,37 @@ def test_sql_agent():
     try:
         conn_str = setup_db()
         service = SimpleEDAService()
+        service.llm.generate_response = MagicMock()
         
-        # Mock LLM to avoid real calls and ensure deterministic SQL
-        service.llm = MagicMock()
-        # First call: Bad SQL (to test retry)
-        # Second call: Good SQL
+        # Mock LLM behavior
+        # Call 1: Bad SQL
+        # Call 2: Good SQL
+        # Call 3: Visualization Plan
         service.llm.generate_response.side_effect = [
-            "SELECT * FROM non_existent_table", # Fail
-            "SELECT * FROM users"               # Success
+            "SELECT * FROM non_existent_table",
+            "SELECT * FROM users",
+            '{"visualize": true, "type": "bar", "x": "name", "y": "age", "title": "Age by User"}'
         ]
         service.use_llm = True
         
-        print("Testing SQL Agent with Retry...")
-        result = service.generate_sql_with_retry(conn_str, "Show me all users")
+        print("Testing SQL Agent with Retry & Visualization...")
+        result = service.generate_sql_with_retry(conn_str, "Show me users and their ages (plot it)")
         
         print("AI Message:", result['ai_message'])
         print("Artifacts:", result['artifacts'].keys())
         
         history = result['artifacts']['sql_history']
         print(f"History length: {len(history)}")
-        for item in history:
-            print(f"Attempt {item['attempt']}: {item['status']} - {item.get('error') or item.get('sql')}")
-            
-        if len(history) == 2 and history[0]['status'] == 'error' and history[1]['status'] == 'success':
-            print("\nSUCCESS: Retry logic verified!")
+        
+        if 'generated_plot' in result['artifacts']:
+             print("SUCCESS: Visualization generated!")
         else:
-            print("\nFAILURE: Retry logic did not work as expected.")
+             print("FAILURE: Visualization NOT generated.")
+
+        if len(history) == 2 and history[0]['status'] == 'error' and history[1]['status'] == 'success':
+            print("SUCCESS: Retry logic verified!")
+        else:
+            print("FAILURE: Retry logic did not work as expected.")
             
     except Exception as e:
         print(f"\nCRITICAL ERROR during test: {e}")
