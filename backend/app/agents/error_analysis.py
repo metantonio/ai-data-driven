@@ -28,7 +28,8 @@ class ErrorAnalysisAgent:
         Tasks:
         1. Identify the exact technical cause (e.g., column 'X' missing in table 'Y', data type mismatch, memory error).
         2. Explain it in plain language for the user.
-        3. Suggest the specific step to fix it (e.g., 'Ensure you use casino_id for merging instead of id').
+        3. Suggest the specific step to fix it (e.g., 'Ensure you use column_a for merging instead of column_b'). 
+           CRITICAL: The fix you suggest MUST use columns and tables that EXPLICITLY exist in the 'Raw Schema Info'.
         4. Be VERY concise (max 3-4 sentences).
 
         Return ONLY the text summary.

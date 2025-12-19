@@ -128,8 +128,10 @@ class CodeAdaptationAgent:
         {template_code}
         
         tasks:
-        1. CRITICAL: Ensure `import sys`, `import os`, and `from sqlalchemy import create_engine` are at the very top.
-        2. Implement 'load_data' using the provided Connection String exactly.
+        1. REASONING: First, list the tables you will use and the specific columns you will use for each (especially for JOINs). 
+           VERIFY each column exists in the provided 'Raw Schema'.
+        2. CRITICAL: Ensure `import sys`, `import os`, and `from sqlalchemy import create_engine` are at the very top.
+        3. Implement 'load_data' using the provided Connection String exactly.
            ```python
            # CORRECT IMPLEMENTATION EXAMPLE:
            from sqlalchemy import create_engine
@@ -140,21 +142,20 @@ class CodeAdaptationAgent:
                query = "SELECT * FROM table_name" # Use real tables from schema, JOIN if needed for the objective
                return pd.read_sql_query(query, engine)
            ```
-        3. CRITICAL: Check the schema for every table before joining.
+        4. CRITICAL: Check the schema for every table before joining.
            - {f"CONNECTION STRING TO USE: {connection_string}"}
-           - DO NOT assume `casino_id` exists in `game_sessions`.
-           - DO NOT assume `loyalty_tier` exists in `players`.
+           - DO NOT assume ANY column exists unless it is in the Raw Schema.
            - ONLY use columns listed in 'Raw Schema' below.
            - To JOIN, prioritize columns in 'FOREIGN KEYS'. Otherwise, match on identical column names (e.g. `order_id`).
            - VERIFY the column exists in BOTH tables before using it in a join.
-        4. Implement 'preprocess_data' to handle missing values and encode categoricals. 
+        5. Implement 'preprocess_data' to handle missing values and encode categoricals. 
            - DO NOT use `df.fillna(inplace=True)`. Use `df[col] = df[col].fillna(...)`.
            - Use `df = pd.get_dummies(df, columns=[...])` for encoding.
-        5. Select the target column based on the objective and analysis, and ensure it is categorical/binary if this is a classification task.
-        6. CRITICAL: At the end, print the JSON report using `print(json.dumps(report))` WITHOUT indent parameter.
+        6. Select the target column based on the objective and analysis, and ensure it is categorical/binary if this is a classification task.
+        7. CRITICAL: At the end, print the JSON report using `print(json.dumps(report))` WITHOUT indent parameter.
            - DO NOT use `json.dumps(report, indent=2)` or any formatting.
            - The JSON MUST be on a SINGLE LINE for the parser to work.
-        7. Output ONLY the full valid Python code. No explanations.
+        8. Output your reasoning first (as comments), then the full valid Python code. No explanations outside the code block.
         """
         
         adapted_code = self.llm.generate_response(prompt)
@@ -200,18 +201,19 @@ class CodeAdaptationAgent:
          {schema_analysis.get('schema_context', str(schema_analysis.get('raw_schema', '')))}
         
         tasks:
-        1. Fix the error by strictly following the 'Raw Schema'.
-        2. CRITICAL: Ensure `from sqlalchemy import create_engine` is used for `load_data`.
-        3. CRITICAL: USE THIS CONNECTION STRING: {schema_analysis.get('connection_string', '')}
-        4. CRITICAL: Only use columns explicitly listed in 'Raw Schema'.
-        5. To JOIN, prioritize 'FOREIGN KEYS'. If not present, use identical column names (e.g., `user_id`) but VERIFY they exist in both tables. 
-           NEVER use a column that only exists in one table for a join key.
-        5. If using Sklearn, convert column names to strings: `X.columns = X.columns.astype(str)`.
-        6. Drop any non-numeric columns from features `X` before training.
-        7. ENSURE `import sys` is at the very top. Use `sys.exit(1)` on failure.
-        8. CRITICAL: Ensure the final JSON report is printed with `print(json.dumps(report))` WITHOUT indent.
-           - DO NOT use `json.dumps(report, indent=2)`. The JSON must be on ONE LINE.
-        9. Output ONLY the full valid Python code.
+        1. REASONING: Analyze the Error Message against the 'Raw Schema'. List which column/table was missing and what the correct name should be based ONLY on the schema.
+        2. Fix the error by strictly following the 'Raw Schema'.
+        3. CRITICAL: Ensure `from sqlalchemy import create_engine` is used for `load_data`.
+        4. CRITICAL: USE THIS CONNECTION STRING: {schema_analysis.get('connection_string', '')}
+        5. CRITICAL: Only use columns explicitly listed in 'Raw Schema'. 
+        6. To JOIN, prioritize 'FOREIGN KEYS'. If not present, use identical column names but VERIFY they exist in both tables.
+        7. If you've already tried a join key that failed, DO NOT TRY IT AGAIN. Look for an alternative or just use the main table.
+        8. If using Sklearn, convert column names to strings: `X.columns = X.columns.astype(str)`.
+        9. Drop any non-numeric columns from features `X` before training.
+        10. ENSURE `import sys` is at the very top. Use `sys.exit(1)` on failure.
+        11. CRITICAL: Ensure the final JSON report is printed with `print(json.dumps(report))` WITHOUT indent.
+            - DO NOT use `json.dumps(report, indent=2)`. The JSON must be on ONE LINE.
+        12. Output your reasoning first (as comments), then the full valid Python code.
         """
         
         fixed_code_response = self.llm.generate_response(prompt)
