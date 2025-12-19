@@ -183,6 +183,16 @@ class CodeAdaptationAgent:
                 history_section += f"Attempt {entry['attempt']}: {entry['summary'][:200]}...\n"
             history_section += "\nIMPORTANT: The above fixes DID NOT WORK. Try a DIFFERENT approach.\n"
         
+        ml_objective = schema_analysis.get('ml_objective')
+        ml_objective_section = ""
+        if ml_objective:
+            ml_objective_section = f"""
+        USER ML OBJECTIVE:
+        "{ml_objective}"
+        
+        CRITICAL: While fixing the code, you MUST ensure it still aims to solve this specific objective.
+        """
+
         prompt = f"""
         You are a Machine Learning Engineer. The following Python code failed to execute. Fix it.
         
@@ -190,6 +200,7 @@ class CodeAdaptationAgent:
         {error_msg}
         {summary_section}
         {history_section}
+        {ml_objective_section}
         
         Original Code:
         {original_code}

@@ -9,10 +9,14 @@ class ErrorAnalysisAgent:
         """
         Analyzes the failed code and stderr to provide a human-readable summary.
         """
+        ml_objective = schema_analysis.get('ml_objective')
+        ml_objective_section = f"\nUser ML Objective: {ml_objective}\n" if ml_objective else ""
+
         prompt = f"""
         You are a Senior Machine Learning Engineer and Debugging Expert.
         A Python ML pipeline failed to execute. Your job is to analyze the error and provide a concise, human-readable summary of the ROOT CAUSE and HOW TO FIX IT.
 
+        {ml_objective_section}
         Dataset Context (Analysis):
         {schema_analysis.get('analysis', 'N/A')}
 
