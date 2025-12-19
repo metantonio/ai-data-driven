@@ -90,7 +90,7 @@ export default function AdvancedAnalysis() {
                     <div className="relative">
                         <MessageSquare className="absolute top-4 left-4 h-5 w-5 text-slate-500" />
                         <textarea
-                            placeholder="e.g. 'Predict customer churn using transaction history and demographics', 'Identify high-value players in the last 30 days'..."
+                            placeholder="e.g. 'Predict customer churn using transaction history and demographics', 'Identify high-value players in the last 30 days', 'Predict if a player will be high-value based on their first few sessions',..."
                             className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-12 pr-4 text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[100px]"
                             value={mlObjective}
                             onChange={(e) => setMlObjective(e.target.value)}
