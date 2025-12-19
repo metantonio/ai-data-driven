@@ -121,8 +121,16 @@ class CodeAdaptationAgent:
         # Let's try to remove any leading/trailing whitespace at least.
         return adapted_code.strip()
 
-    def fix_code(self, original_code: str, error_msg: str, schema_analysis: dict, error_summary: str = None) -> str:
+    def fix_code(self, original_code: str, error_msg: str, schema_analysis: dict, error_summary: str = None, error_history: list = None) -> str:
         summary_section = f"\nAI Error Analysis:\n{error_summary}\n" if error_summary else ""
+        
+        # Format error history if available
+        history_section = ""
+        if error_history and len(error_history) > 1:
+            history_section = "\n\nPREVIOUS FAILED ATTEMPTS:\n"
+            for entry in error_history[:-1]:  # Exclude current error (last one)
+                history_section += f"Attempt {entry['attempt']}: {entry['summary'][:200]}...\n"
+            history_section += "\nIMPORTANT: The above fixes DID NOT WORK. Try a DIFFERENT approach.\n"
         
         prompt = f"""
         You are a Machine Learning Engineer. The following Python code failed to execute. Fix it.
@@ -130,6 +138,7 @@ class CodeAdaptationAgent:
         Error Message:
         {error_msg}
         {summary_section}
+        {history_section}
         
         Original Code:
         {original_code}

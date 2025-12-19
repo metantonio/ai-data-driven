@@ -22,6 +22,7 @@ class ExecutorService:
         max_retries = 2
         current_code = code
         attempt = 0
+        error_history = []  # Track previous errors to avoid repeating fixes
 
         while attempt <= max_retries:
             attempt += 1
@@ -75,12 +76,19 @@ class ExecutorService:
                         error_summary = f"Pipeline execution failed. Error: {stderr[-500:]}"
                         yield {"status": "error", "message": error_summary, "data": {"stderr": stderr}}
 
+                    # Add to error history
+                    error_history.append({
+                        "attempt": attempt,
+                        "error": stderr[-500:],  # Last 500 chars to keep it manageable
+                        "summary": error_summary
+                    })
+
                     if attempt <= max_retries:
                         yield {"status": "fixing", "message": "AI is applying an automated fix..."}
                         
                         try:
                             adapter = CodeAdaptationAgent(llm_service)
-                            current_code = adapter.fix_code(current_code, stderr, schema_analysis, error_summary)
+                            current_code = adapter.fix_code(current_code, stderr, schema_analysis, error_summary, error_history)
                             yield {"status": "info", "message": "Fix applied. Retrying...", "data": {"code": current_code}}
                         except Exception as fix_error:
                              yield {"status": "error", "message": f"Auto-fixer failed: {str(fix_error)}. Retrying with original code...", "data": None}
