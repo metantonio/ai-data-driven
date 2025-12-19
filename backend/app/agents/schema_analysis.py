@@ -40,7 +40,7 @@ class SchemaAnalysisAgent:
             "connection_string": connection_string
         }
 
-    def analyze_with_comments(self, connection_string: str, user_comments: dict, algorithm_type: str = "linear_regression") -> dict:
+    def analyze_with_comments(self, connection_string: str, user_comments: dict, algorithm_type: str = "linear_regression", selected_tables: list = None) -> dict:
         # Resolve connection string early
         connection_string = DatabaseInspector.resolve_connection_string(connection_string)
         
@@ -48,12 +48,40 @@ class SchemaAnalysisAgent:
         inspector = DatabaseInspector(connection_string)
         schema_summary = inspector.get_schema_summary()
         
-        # 2. Prompt LLM to analyze the schema WITH user comments
+        # 2. Filter schema to only include selected tables
+        if selected_tables and len(selected_tables) > 0:
+            filtered_schema = {"tables": {}}
+            for table_name in selected_tables:
+                if table_name in schema_summary.get("tables", {}):
+                    filtered_schema["tables"][table_name] = schema_summary["tables"][table_name]
+            schema_summary = filtered_schema
+        
+        # 3. Prompt LLM to analyze the schema WITH user comments
+        tables_count = len(schema_summary.get("tables", {}))
+        multi_table_guidance = ""
+        if tables_count > 1:
+            multi_table_guidance = f"""
+        
+        CRITICAL - MULTI-TABLE ANALYSIS:
+        The user has selected {tables_count} tables for this analysis. This strongly suggests that:
+        1. You MUST use data from MULTIPLE tables, not just one.
+        2. You MUST identify appropriate JOIN keys between tables.
+        3. You MUST explain how combining these tables creates a richer feature set.
+        4. Using only ONE table when multiple are available is likely INCORRECT unless there's a very specific reason.
+        
+        When analyzing, explicitly state:
+        - Which tables will be joined
+        - What are the join keys (primary/foreign key relationships)
+        - How each table contributes features to the model
+        - Why this multi-table approach makes sense for {algorithm_type}
+        """
+        
         prompt = f"""
         You are an expert Data Scientist. Analyze the following database schema for a '{algorithm_type}' task.
         
         User Comments on Data Dictionary:
         {user_comments}
+        {multi_table_guidance}
         
         Identify:
         1. The main topics/entities.
@@ -79,5 +107,6 @@ class SchemaAnalysisAgent:
             "raw_schema": schema_summary,
             "analysis": analysis,
             "connection_string": connection_string,
-            "user_comments": user_comments
+            "user_comments": user_comments,
+            "selected_tables": selected_tables or []
         }

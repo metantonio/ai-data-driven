@@ -34,6 +34,7 @@ class AnalyzeWithCommentsRequest(BaseModel):
     connection_string: str
     user_comments: dict
     algorithm_type: str = "linear_regression"
+    selected_tables: List[str] = []
 
 class GetSchemaRequest(BaseModel):
     connection_string: str
@@ -55,7 +56,8 @@ def analyze_schema_with_comments(request: AnalyzeWithCommentsRequest):
         analysis = agent.analyze_with_comments(
             request.connection_string, 
             request.user_comments, 
-            request.algorithm_type
+            request.algorithm_type,
+            request.selected_tables
         )
         return analysis
     except FileNotFoundError as e:

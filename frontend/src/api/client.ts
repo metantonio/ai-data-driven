@@ -37,11 +37,12 @@ export const getSchema = async (connectionString: string) => {
     return response.data;
 };
 
-export const analyzeSchemaWithComments = async (connectionString: string, userComments: Record<string, any>, algorithmType: string) => {
+export const analyzeSchemaWithComments = async (connectionString: string, userComments: Record<string, any>, algorithmType: string, selectedTables: string[] = []) => {
     const response = await api.post('/analyze-schema-with-comments', {
         connection_string: connectionString,
         user_comments: userComments,
-        algorithm_type: algorithmType
+        algorithm_type: algorithmType,
+        selected_tables: selectedTables
     });
     return response.data;
 };

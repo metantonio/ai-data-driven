@@ -10,6 +10,9 @@ export default function AdvancedAnalysis() {
 
     // State for user comments: table -> column -> comment
     const [comments, setComments] = useState<Record<string, Record<string, string>>>({});
+    const [selectedTables, setSelectedTables] = useState<string[]>(
+        Object.keys(schema?.tables || {})
+    );
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -27,11 +30,19 @@ export default function AdvancedAnalysis() {
         }));
     };
 
+    const handleTableToggle = (tableName: string) => {
+        setSelectedTables(prev =>
+            prev.includes(tableName)
+                ? prev.filter(t => t !== tableName)
+                : [...prev, tableName]
+        );
+    };
+
     const handleAnalyze = async () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await analyzeSchemaWithComments(connectionString, comments, algorithmType);
+            const data = await analyzeSchemaWithComments(connectionString, comments, algorithmType, selectedTables);
             navigate('/eda-progress', {
                 state: {
                     schemaAnalysis: data,
@@ -76,8 +87,14 @@ export default function AdvancedAnalysis() {
 
                     <div className="space-y-8">
                         {Object.entries(schema?.tables || {}).map(([tableName, tableData]: [string, any]) => (
-                            <div key={tableName} className="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700/50">
+                            <div key={tableName} className={`bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700/50 transition-all ${!selectedTables.includes(tableName) ? 'opacity-50 grayscale' : ''}`}>
                                 <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedTables.includes(tableName)}
+                                        onChange={() => handleTableToggle(tableName)}
+                                        className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-500 focus:ring-cyan-500/20"
+                                    />
                                     <Table className="h-4 w-4 text-cyan-400" />
                                     <h3 className="font-mono text-cyan-100 font-medium">{tableName}</h3>
                                 </div>

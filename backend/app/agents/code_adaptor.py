@@ -54,6 +54,41 @@ class CodeAdaptationAgent:
 
         # 2. Prompt LLM to fill placeholders
         connection_string = schema_analysis.get('connection_string', 'sqlite:///../example.db')
+        selected_tables = schema_analysis.get('selected_tables', [])
+        
+        # Add multi-table enforcement guidance
+        multi_table_enforcement = ""
+        if selected_tables and len(selected_tables) > 1:
+            table_list = ", ".join(selected_tables)
+            multi_table_enforcement = f"""
+        
+        CRITICAL - MULTI-TABLE REQUIREMENT:
+        The user has explicitly selected {len(selected_tables)} tables: {table_list}
+        
+        YOU MUST:
+        1. Load data from ALL {len(selected_tables)} selected tables, not just one.
+        2. Perform appropriate JOINs between these tables using primary/foreign key relationships.
+        3. Verify that join keys exist in the 'Raw Schema' before using them.
+        4. Create a unified dataset that combines features from all selected tables.
+        5. If you cannot identify join keys, use the schema analysis to find relationships.
+        
+        EXAMPLE MULTI-TABLE IMPLEMENTATION:
+        ```python
+        def load_data():
+            engine = create_engine("{connection_string}")
+            
+            # Load each table
+            table1 = pd.read_sql_query("SELECT * FROM {selected_tables[0]}", engine)
+            table2 = pd.read_sql_query("SELECT * FROM {selected_tables[1]}", engine)
+            
+            # Join tables (verify join keys from schema first!)
+            # Example: df = table1.merge(table2, left_on='id', right_on='table1_id', how='inner')
+            
+            return df
+        ```
+        
+        FAILURE TO USE ALL SELECTED TABLES IS UNACCEPTABLE.
+        """
         
         prompt = f"""
         You are a Machine Learning Engineer. Adapt the following Python ML template to work with the described dataset.
@@ -75,6 +110,7 @@ class CodeAdaptationAgent:
         
         Connection String:
         "{connection_string}"
+        {multi_table_enforcement}
         
         Template Code:
         {template_code}
