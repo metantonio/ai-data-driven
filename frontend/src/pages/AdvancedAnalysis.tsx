@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Save, Database, Table, MessageSquare, Loader, Brain } from 'lucide-react';
 import { analyzeSchemaWithComments } from '../api/client';
+import { Stepper } from '../components/Stepper';
 
 export default function AdvancedAnalysis() {
     const location = useLocation();
@@ -61,7 +62,8 @@ export default function AdvancedAnalysis() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 p-6 flex flex-col items-center">
+        <div className="min-h-screen bg-slate-900 p-6 flex flex-col items-center gap-6">
+            <Stepper currentStep="configure" />
             <div className="w-full max-w-6xl space-y-6">
 
                 {/* Header */}

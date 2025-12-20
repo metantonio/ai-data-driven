@@ -26,3 +26,11 @@ pymysql==1.1.1
 cryptography==42.0.5
 backports.tarfile==1.2.0
 pyinstaller==6.11.1
+plotly==5.22.0
+shap==0.45.1
+xgboost==2.0.3
+lightgbm==4.3.0
+imbalanced-learn==0.12.2
+langchain==0.1.1
+langchain-community==0.0.13
+langchain-openai==0.0.3

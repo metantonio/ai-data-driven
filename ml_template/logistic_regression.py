@@ -54,14 +54,53 @@ def main():
         predictions = model.predict(X_test)
         accuracy = accuracy_score(y_test, predictions)
         
-        report = {
+        # 6. SHAP Explanations
+        import shap
+        # For Logistic Regression, we can use LinearExplainer
+        explainer = shap.LinearExplainer(model, X_train)
+        shap_values = explainer.shap_values(X_test)
+        
+        # In multiclass, shap_values is a list. For simplicity, we use the first class or average.
+        # Here we take the absolute mean across samples.
+        if isinstance(shap_values, list):
+            # Take the first class (usually most relevant for binary/multiclass comparison)
+            importance = np.abs(shap_values[0]).mean(0)
+        else:
+            importance = np.abs(shap_values).mean(0)
+            
+        shap_importance = {col: float(imp) for col, imp in zip(X.columns, importance)}
+        
+        # 7. Save Model & Metadata (Model Registry)
+        import joblib
+        import os
+        import time
+        
+        run_id = f"run_{int(time.time())}"
+        run_dir = os.path.join('models', run_id)
+        os.makedirs(run_dir, exist_ok=True)
+        
+        model_path = os.path.join(run_dir, 'model.joblib')
+        joblib.dump(model, model_path)
+        
+        metadata = {
+            "run_id": run_id,
+            "timestamp": time.ctime(),
             "metrics": {
                 "accuracy": float(accuracy)
             },
             "model_type": "Logistic Regression",
             "features": list(X.columns),
             "target": target_col,
-            "classes": list(map(str, model.classes_))
+            "classes": list(map(str, model.classes_)),
+            "shap_importance": shap_importance
+        }
+        
+        with open(os.path.join(run_dir, 'metadata.json'), 'w') as f:
+            json.dump(metadata, f)
+            
+        report = {
+            **metadata,
+            "model_path": model_path
         }
         print(json.dumps(report))
 

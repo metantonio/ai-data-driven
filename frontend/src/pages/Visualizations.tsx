@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { ChevronLeft, BarChart2 } from 'lucide-react';
+import { DataTable } from '../components/DataTable';
+import { ColumnDef } from '@tanstack/react-table';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -81,7 +83,7 @@ export default function Visualizations() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-50 p-6 md:p-12">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 p-6 md:p-12">
             <div className="max-w-6xl mx-auto space-y-8">
                 <div className="flex items-center gap-4 border-b border-slate-700/50 pb-6">
                     <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
@@ -97,28 +99,24 @@ export default function Visualizations() {
 
                 {renderChart()}
 
-                <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
-                    <h3 className="text-xl font-semibold mb-4 text-slate-200">Raw Data Sample</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left text-slate-300">
-                            <thead className="text-xs text-slate-400 uppercase bg-slate-900/50">
-                                <tr>
-                                    {data.length > 0 && Object.keys(data[0]).map(key => (
-                                        <th key={key} className="px-6 py-3">{key}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.slice(0, 10).map((row: any, i: number) => (
-                                    <tr key={i} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                                        {Object.values(row).map((val: any, j) => (
-                                            <td key={j} className="px-6 py-4">{typeof val === 'number' ? val.toFixed(4) : String(val)}</td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="bg-white dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg">
+                    <h3 className="text-xl font-semibold mb-6 text-slate-500 dark:text-slate-200 uppercase tracking-widest text-sm font-bold">Raw Data Sample</h3>
+                    <DataTable
+                        data={data}
+                        columns={
+                            data.length > 0
+                                ? Object.keys(data[0]).map(key => ({
+                                    header: key,
+                                    accessorKey: key,
+                                    cell: (info: any) => {
+                                        const val = info.getValue();
+                                        return typeof val === 'number' ? val.toFixed(4) : String(val);
+                                    }
+                                })) as ColumnDef<any, any>[]
+                                : []
+                        }
+                        pageSize={10}
+                    />
                 </div>
             </div>
         </div>

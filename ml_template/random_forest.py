@@ -50,29 +50,49 @@ def main():
         predictions = model.predict(X_test)
         accuracy = accuracy_score(y_test, predictions)
         
-        # Feature Importance for visualization
-        importances = model.feature_importances_
-        feature_importance = [
-            {"feature": f, "importance": float(i)} 
-            for f, i in zip(X.columns, importances)
-        ]
-        # Sort by importance
-        feature_importance = sorted(feature_importance, key=lambda x: x['importance'], reverse=True)[:10]
+        # 6. SHAP Explanations
+        import shap
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(X_test)
         
-        # 6. Save Model
-        os.makedirs('models', exist_ok=True)
-        model_path = 'models/model.joblib'
+        # In multiclass, shap_values is a list.
+        if isinstance(shap_values, list):
+            importance = np.abs(shap_values[0]).mean(0)
+        else:
+            importance = np.abs(shap_values).mean(0)
+            
+        shap_importance = {col: float(imp) for col, imp in zip(X.columns, importance)}
+        
+        # 7. Save Model & Metadata (Model Registry)
+        import os
+        import time
+        import joblib
+        
+        run_id = f"run_{int(time.time())}"
+        run_dir = os.path.join('models', run_id)
+        os.makedirs(run_dir, exist_ok=True)
+        
+        model_path = os.path.join(run_dir, 'model.joblib')
         joblib.dump(model, model_path)
         
-        report = {
+        metadata = {
+            "run_id": run_id,
+            "timestamp": time.ctime(),
             "metrics": {
                 "accuracy": float(accuracy)
             },
             "model_type": "Random Forest Classifier",
             "features": list(X.columns),
             "target": target_col,
-            "model_path": model_path,
-            "feature_importance": feature_importance
+            "shap_importance": shap_importance
+        }
+        
+        with open(os.path.join(run_dir, 'metadata.json'), 'w') as f:
+            json.dump(metadata, f)
+            
+        report = {
+            **metadata,
+            "model_path": model_path
         }
         print(json.dumps(report))
 

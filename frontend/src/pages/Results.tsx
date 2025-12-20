@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { adaptCode, executeCodeStream, generateInsights, ExecutionReport, predict } from '../api/client';
-import { Code, Play, FileText, CheckCircle, AlertTriangle, Loader, ChevronLeft, BarChart2, Calculator, Copy, Download, Check } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Loader, AlertTriangle, Code, Download, Play, BarChart2, FileText, Calculator, Copy, Check } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
+import { Stepper } from '../components/Stepper';
 
 function PredictionForm({ modelPath, features }: { modelPath: string, features: string[] }) {
     const [formData, setFormData] = useState<Record<string, string>>({});
@@ -134,7 +136,7 @@ function CopyButton({ text, label }: { text: string, label?: string }) {
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold border ${copied
                 ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
                 : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'
-                }`}
+                } `}
         >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {label && <span>{copied ? 'Copied!' : label}</span>}
@@ -308,7 +310,10 @@ export default function Results() {
     if (!schemaAnalysis) return null;
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-50 p-6 md:p-12">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 p-6 md:p-12">
+            <div className="max-w-6xl mx-auto mb-10">
+                <Stepper currentStep="results" />
+            </div>
             <div className="mx-auto space-y-8">
 
                 {/* Header */}
@@ -388,7 +393,7 @@ export default function Results() {
                     {/* Left Column (1/4): Code & Execution Logs */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Code Block */}
-                        <div className={`space-y-4 transition-all duration-500 ${latestCode ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                        <div className={`space-y-4 transition-all duration-500 ${latestCode ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'} `}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-cyan-400">
                                     <Code className="h-5 w-5" />
@@ -420,7 +425,7 @@ export default function Results() {
                         </div>
 
                         {/* Execution Logs */}
-                        <div className={`space-y-4 transition-all duration-500 delay-100 ${executionResult ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                        <div className={`space-y-4 transition-all duration-500 delay-100 ${executionResult ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'} `}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-purple-400">
                                     <Play className="h-5 w-5" />
@@ -485,6 +490,43 @@ export default function Results() {
                             </button>
                         )}
 
+                        {/* SHAP Importance Card */}
+                        {executionResult?.report?.shap_importance && (
+                            <div className="bg-white dark:bg-slate-800/80 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-xl space-y-4">
+                                <div className="flex items-center gap-2 text-cyan-500 mb-2">
+                                    <BarChart2 className="h-5 w-5" />
+                                    <h3 className="font-bold text-lg">Feature Importance (SHAP)</h3>
+                                </div>
+                                <div className="h-64 -ml-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={Object.entries(executionResult.report.shap_importance)
+                                                .map(([name, value]) => ({ name, value }))
+                                                .sort((a, b) => b.value - a.value)
+                                                .slice(0, 10)}
+                                            layout="vertical"
+                                            margin={{ left: 20 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                                width={80}
+                                            />
+                                            <Tooltip
+                                                cursor={{ fill: 'transparent' }}
+                                                contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px' }}
+                                            />
+                                            <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#06b6d4" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="text-[10px] text-slate-500 italic">This chart shows which features had the most impact on the model's predictions.</p>
+                            </div>
+                        )}
+
                         {/* Interactive Prediction Form */}
                         {executionResult?.report?.model_path && executionResult?.report?.features && (
                             <PredictionForm
@@ -495,7 +537,7 @@ export default function Results() {
                     </div>
 
                     {/* Right Column (2/4 = 1/2): Insights */}
-                    <div className={`lg:col-span-3 transition-all duration-500 delay-200 ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                    <div className={`lg:col-span-3 transition-all duration-500 delay-200 ${insights ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'} `}>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2 text-yellow-400">
                                 <FileText className="h-6 w-6" />

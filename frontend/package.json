@@ -10,8 +10,10 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@tanstack/react-table": "^8.21.3",
         "@types/react-plotly.js": "^2.6.4",
         "axios": "^1.6.0",
+        "clsx": "^2.1.1",
         "lucide-react": "^0.290.0",
         "plotly.js": "^3.3.1",
         "react": "^19.2.3",
@@ -21,7 +23,8 @@
         "react-plotly.js": "^2.6.0",
         "react-router-dom": "^6.18.0",
         "recharts": "^3.5.1",
-        "rehype-highlight": "^7.0.2"
+        "rehype-highlight": "^7.0.2",
+        "tailwind-merge": "^3.4.0"
     },
     "devDependencies": {
         "@types/react": "^18.2.37",

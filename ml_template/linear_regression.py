@@ -59,16 +59,30 @@ def main():
             
         visualization_data = viz_df.to_dict(orient='records')
         
-        # 6. Save Model
+        # 6. SHAP Explanations
+        import shap
+        explainer = shap.Explainer(model, X_train)
+        shap_values = explainer(X_test)
+        
+        # Global feature importance (mean absolute SHAP values)
+        importance = np.abs(shap_values.values).mean(0)
+        shap_importance = {col: float(imp) for col, imp in zip(X.columns, importance)}
+        
+        # 7. Save Model & Metadata (Model Registry)
         import joblib
         import os
+        import time
         
-        # Ensure models directory exists
-        os.makedirs('models', exist_ok=True)
-        model_path = 'models/model.joblib'
+        run_id = f"run_{int(time.time())}"
+        run_dir = os.path.join('models', run_id)
+        os.makedirs(run_dir, exist_ok=True)
+        
+        model_path = os.path.join(run_dir, 'model.joblib')
         joblib.dump(model, model_path)
         
-        report = {
+        metadata = {
+            "run_id": run_id,
+            "timestamp": time.ctime(),
             "metrics": {
                 "mse": float(mse),
                 "r2": float(r2)
@@ -76,6 +90,15 @@ def main():
             "model_type": "Linear Regression",
             "features": list(X.columns),
             "target": target_col,
+            "shap_importance": shap_importance
+        }
+        
+        with open(os.path.join(run_dir, 'metadata.json'), 'w') as f:
+            json.dump(metadata, f)
+            
+        report = {
+            # Legacy fields for backward compatibility
+            **metadata,
             "model_path": model_path,
             "visualization_data": visualization_data
         }

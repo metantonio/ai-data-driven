@@ -16,12 +16,13 @@ export interface SchemaAnalysis {
 }
 
 export interface ExecutionReport {
-    metrics: Record<string, any>; // Record to support dynamic keys like 'silhouette_score', 'accuracy', etc.
+    metrics: Record<string, any>;
     model_type: string;
     features: string[];
     target: string;
-    model_path?: string; // Added for interactive prediction
+    model_path?: string;
     visualization_data?: any[];
+    shap_importance?: Record<string, number>;
 }
 
 export const analyzeSchema = async (connectionString: string, algorithmType: string) => {

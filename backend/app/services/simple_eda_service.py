@@ -186,7 +186,12 @@ Respond with just the interpreted question, nothing else."""
                 try:
                     viz_result = self._decide_and_generate_visualization(df, question)
                     if viz_result:
-                        artifacts['generated_plot'] = viz_result['plot']
+                        if 'plotly' in viz_result:
+                            artifacts['plotly'] = viz_result['plotly']
+                            artifacts['title'] = viz_result['title']
+                        else:
+                            artifacts['generated_plot'] = viz_result['plot']
+                            
                         message += f"\n\n📊 **Visualization generated:** {viz_result['title']}"
                 except Exception as e:
                     print(f"Visualization agent failed: {e}")
@@ -298,11 +303,122 @@ Important:
                 
             print(f"[EDA] Visualization Agent planned: {viz_plan}")
             
-            # 2. Generate Plot
+            # 2. Generate Plotly Data
+            plotly_data = self._generate_plotly_from_plan(df, viz_plan)
+            if plotly_data:
+                return {
+                    "plotly": plotly_data,
+                    "title": viz_plan.get("title")
+                }
+            
+            # Fallback to Matplotlib if Plotly fails or isn't requested
             return self._generate_plot_from_plan(df, viz_plan)
             
         except Exception as e:
             print(f"[EDA] Visualization decision failed: {e}")
+            return None
+
+    def _generate_plotly_from_plan(self, df: pd.DataFrame, plan: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate Plotly JSON representation from a visualization plan.
+        """
+        try:
+            chart_type = plan.get("type")
+            x = plan.get("x")
+            y = plan.get("y")
+            hue = plan.get("hue") if plan.get("hue") in df.columns else None
+            title = plan.get("title", f"{chart_type.title()} Plot")
+
+            data = []
+            if chart_type == 'pie':
+                data = [{
+                    "values": df[y].tolist() if y else [1]*len(df),
+                    "labels": df[x].tolist() if x else None,
+                    "type": "pie",
+                    "hole": .4
+                }]
+            elif chart_type == 'bar':
+                if hue:
+                    for val in df[hue].unique():
+                        sub = df[df[hue] == val]
+                        data.append({
+                            "x": sub[x].tolist(),
+                            "y": sub[y].tolist(),
+                            "name": str(val),
+                            "type": "bar"
+                        })
+                else:
+                    data = [{
+                        "x": df[x].tolist(),
+                        "y": df[y].tolist(),
+                        "type": "bar",
+                        "marker": {"color": "#22d3ee"}
+                    }]
+            elif chart_type == 'line':
+                if hue:
+                    for val in df[hue].unique():
+                        sub = df[df[hue] == val]
+                        data.append({
+                            "x": sub[x].tolist(),
+                            "y": sub[y].tolist(),
+                            "name": str(val),
+                            "type": "scatter",
+                            "mode": "lines+markers"
+                        })
+                else:
+                    data = [{
+                        "x": df[x].tolist(),
+                        "y": df[y].tolist(),
+                        "type": "scatter",
+                        "mode": "lines+markers",
+                        "line": {"color": "#22d3ee"}
+                    }]
+            elif chart_type == 'scatter':
+                if hue:
+                    for val in df[hue].unique():
+                        sub = df[df[hue] == val]
+                        data.append({
+                            "x": sub[x].tolist(),
+                            "y": sub[y].tolist(),
+                            "name": str(val),
+                            "type": "scatter",
+                            "mode": "markers"
+                        })
+                else:
+                    data = [{
+                        "x": df[x].tolist(),
+                        "y": df[y].tolist(),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "marker": {"color": "#22d3ee", "size": 10}
+                    }]
+            elif chart_type == 'histogram':
+                data = [{
+                    "x": df[x].tolist(),
+                    "type": "histogram",
+                    "marker": {"color": "#22d3ee"}
+                }]
+            elif chart_type == 'box':
+                data = [{
+                    "y": df[y].tolist(),
+                    "x": df[x].tolist() if x else None,
+                    "type": "box",
+                    "marker": {"color": "#22d3ee"}
+                }]
+
+            layout = {
+                "title": title,
+                "paper_bgcolor": "rgba(15, 23, 42, 0.5)",
+                "plot_bgcolor": "rgba(15, 23, 42, 0.5)",
+                "font": {"color": "#cbd5e1"},
+                "xaxis": {"gridcolor": "#334155", "zerolinecolor": "#334155"},
+                "yaxis": {"gridcolor": "#334155", "zerolinecolor": "#334155"},
+                "margin": {"t": 40, "b": 40, "l": 40, "r": 40}
+            }
+
+            return {"data": data, "layout": layout}
+        except Exception as e:
+            print(f"[EDA] Plotly generation failed: {e}")
             return None
 
     def _build_visualization_prompt(self, df: pd.DataFrame, question: str) -> str:

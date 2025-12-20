@@ -5,6 +5,9 @@ import ReactMarkdown from 'react-markdown';
 import Plot from 'react-plotly.js';
 import { Database, Send, Loader, Sparkles, ArrowLeft, Reply } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Stepper } from '../components/Stepper';
+import { DataTable } from '../components/DataTable';
+import { ColumnDef } from '@tanstack/react-table';
 
 interface Artifact {
     title?: string;
@@ -138,29 +141,22 @@ const EDAPage: React.FC = () => {
 
     const renderArtifact = (artifact: Artifact, idx: number) => {
         switch (artifact.render_type) {
-            case 'dataframe':
+            case 'dataframe': {
+                const columns: ColumnDef<any, any>[] = artifact.data.length > 0
+                    ? Object.keys(artifact.data[0]).map(key => ({
+                        header: key,
+                        accessorKey: key,
+                        cell: (info: any) => String(info.getValue()),
+                    }))
+                    : [];
+
                 return (
-                    <div key={idx} className="overflow-x-auto my-4 rounded-xl border border-slate-700/50 bg-slate-900/50">
-                        <table className="min-w-full divide-y divide-slate-700">
-                            <thead className="bg-slate-800/50">
-                                <tr>
-                                    {artifact.data.length > 0 && Object.keys(artifact.data[0]).map(key => (
-                                        <th key={key} className="px-4 py-3 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">{key}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-700/50">
-                                {artifact.data.map((row: any, rIdx: number) => (
-                                    <tr key={rIdx} className="hover:bg-slate-800/30 transition-colors">
-                                        {Object.values(row).map((val: any, cIdx: number) => (
-                                            <td key={cIdx} className="px-4 py-3 whitespace-nowrap text-sm text-slate-300">{String(val)}</td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div key={idx} className="my-4 p-4 rounded-xl border border-slate-700/50 bg-slate-900/50 shadow-xl">
+                        <h4 className="text-sm font-bold text-cyan-400 mb-4 px-2 uppercase tracking-wider">{artifact.title}</h4>
+                        <DataTable data={artifact.data} columns={columns} pageSize={5} />
                     </div>
                 );
+            }
             case 'matplotlib':
                 return (
                     <div key={idx} className="my-4 p-4 rounded-xl bg-slate-900/50 border border-slate-700/50">
@@ -224,7 +220,12 @@ const EDAPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col p-4">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col p-4 text-slate-900 dark:text-slate-50">
+            {/* Stepper */}
+            <div className="mt-4">
+                <Stepper currentStep="explore" />
+            </div>
+
             {/* Header */}
             <div className="mb-6 text-center relative">
                 {/* Back Button */}

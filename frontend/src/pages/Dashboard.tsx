@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, ArrowRight, Loader, Settings, HelpCircle, Copy, Check, ExternalLink } from 'lucide-react';
+import { Database, ArrowRight, Loader, Settings, HelpCircle, Copy, Check, ExternalLink, Sparkles, ChevronRight } from 'lucide-react';
 import { analyzeSchema, getSchema } from '../api/client';
+import { Stepper } from '../components/Stepper';
 
 function ConnectionGuide({ onSelect }: { onSelect: (val: string) => void }) {
     const [copied, setCopied] = useState<string | null>(null);
@@ -24,46 +25,40 @@ function ConnectionGuide({ onSelect }: { onSelect: (val: string) => void }) {
     };
 
     return (
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 text-left space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex items-center gap-2 text-cyan-400 mb-2">
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 text-left space-y-4 animate-in fade-in slide-in-from-right-4 duration-300 shadow-xl">
+            <div className="flex items-center gap-2 text-cyan-500 mb-2">
                 <HelpCircle className="h-5 w-5" />
                 <h3 className="font-bold text-lg">Connection Guide</h3>
             </div>
-            <p className="text-slate-400 text-sm leading-relaxed">
-                Connect your database using SQLAlchemy compatible strings. Here are some examples from the documentation:
+            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                Connect your database using SQLAlchemy compatible strings. Here are some examples:
             </p>
             <div className="space-y-3">
                 {examples.map((ex) => (
-                    <div key={ex.value} className="group relative bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 hover:border-cyan-500/50 transition-all">
+                    <div key={ex.value} className="group relative bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 hover:border-cyan-500/50 transition-all">
                         <div className="flex justify-between items-start mb-1">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{ex.label}</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{ex.label}</span>
                             <div className="flex gap-1">
                                 <button
                                     onClick={() => copyToClipboard(ex.value)}
-                                    className="p-1 hover:bg-slate-700 rounded transition-colors"
+                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
                                     title="Copy to clipboard"
                                 >
-                                    {copied === ex.value ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-slate-400" />}
+                                    {copied === ex.value ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-slate-400" />}
                                 </button>
                                 <button
                                     onClick={() => onSelect(ex.value)}
-                                    className="p-1 hover:bg-slate-700 rounded transition-colors"
+                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
                                     title="Use this example"
                                 >
-                                    <ExternalLink className="h-3.5 w-3.5 text-cyan-400" />
+                                    <ExternalLink className="h-3.5 w-3.5 text-cyan-500" />
                                 </button>
                             </div>
                         </div>
-                        <div className="font-mono text-xs text-slate-300 break-all mb-1">{ex.value}</div>
-                        <div className="text-[10px] text-slate-500 italic">{ex.desc}</div>
+                        <div className="font-mono text-xs text-slate-600 dark:text-slate-300 break-all mb-1">{ex.value}</div>
+                        <div className="text-[10px] text-slate-400 italic">{ex.desc}</div>
                     </div>
                 ))}
-            </div>
-            <div className="pt-2 border-t border-slate-700/50">
-                <p className="text-[10px] text-slate-500">
-                    Note: For SQLite, if you enter a filename like <code className="text-slate-400">example.db</code>,
-                    the system will automatically prepend <code className="text-slate-400">sqlite:///</code>.
-                </p>
             </div>
         </div>
     );
@@ -102,112 +97,113 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 space-y-12">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6 space-y-6 text-slate-900 dark:text-slate-50">
+            <Stepper currentStep="connect" />
+
             <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-5 gap-12 items-center text-left">
 
-                {/* Left Side: Hero & Form */}
-                <div className="lg:col-span-3 space-y-8 animate-in fade-in slide-in-from-left-8 duration-700">
+                <div className="lg:col-span-3 space-y-8">
                     <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-xs font-bold tracking-widest uppercase">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-widest">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                             </span>
-                            <a href="https://www.qlx.com" target="_blank" rel="noopener noreferrer">QLX AI-Powered Data Science</a>
+                            QLX AI-Powered Data Science
                         </div>
-                        <h1 className="text-5xl font-extrabold text-white tracking-tight leading-tight">
+                        <h1 className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
                             Build ML Pipelines <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600 dark:from-cyan-400 dark:to-blue-500">
                                 Directly from your DB
                             </span>
                         </h1>
-                        <p className="text-slate-400 text-xl max-w-xl">
+                        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl leading-relaxed">
                             Connect your PostgreSQL, SQLite, or SAP HANA database and let our AI agents handle the rest.
                         </p>
                     </div>
 
-                    <div className="bg-slate-800/80 p-8 rounded-3xl shadow-2xl border border-slate-700/50 backdrop-blur-md relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4">
+                    <div className="bg-white dark:bg-slate-800/80 p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700/50 backdrop-blur-md relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 flex gap-2">
                             <button
                                 onClick={() => setShowGuide(!showGuide)}
-                                className={`p-2 rounded-xl transition-all ${showGuide ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                                className={`p-2 rounded-xl transition-all ${showGuide ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-400 hover:text-cyan-500 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700'}`}
                                 title="Connection Guide"
                             >
                                 <HelpCircle className="h-6 w-6" />
                             </button>
                             <button
                                 onClick={() => navigate('/settings')}
-                                className="p-2 ml-2 bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl transition-all"
+                                className="p-2 bg-slate-100 dark:bg-slate-900/50 text-slate-400 hover:text-cyan-500 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded-xl transition-all"
                                 title="System Settings"
                             >
                                 <Settings className="h-6 w-6" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/registry')}
+                                className="p-2 bg-slate-100 dark:bg-slate-900/50 text-slate-400 hover:text-cyan-500 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded-xl transition-all"
+                                title="Model Registry"
+                            >
+                                <Database className="h-6 w-6" />
                             </button>
                         </div>
 
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-300 ml-1">Analysis Type</label>
-                                <select
-                                    value={algorithmType}
-                                    onChange={(e) => setAlgorithmType(e.target.value)}
-                                    className="w-full pl-4 pr-10 py-3 bg-slate-900/50 border border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-100 transition-all text-sm appearance-none"
-                                >
-                                    <option value="linear_regression">Linear Regression</option>
-                                    <option value="logistic_regression">Logistic Regression (Classification)</option>
-                                    <option value="kmeans">K-Means Clustering</option>
-                                    <option value="hierarchical">Hierarchical Clustering</option>
-                                    <option value="time_series">Time Series Forecasting</option>
-                                    <option value="association_rules">Association Rules (Market Basket)</option>
-                                    <option value="reinforcement_learning">Reinforcement Learning</option>
-                                    <option value="linear_programming">Linear Programming (Optimization)</option>
-                                    <option value="mixed_integer_programming">Mixed Integer Programming</option>
-                                    <option value="random_forest">Random Forest</option>
-                                    <option value="decision_tree">Decision Tree</option>
-                                </select>
+                                <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-1">Analysis Type</label>
+                                <div className="relative">
+                                    <select
+                                        value={algorithmType}
+                                        onChange={(e) => setAlgorithmType(e.target.value)}
+                                        className="w-full pl-4 pr-10 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-900 dark:text-slate-100 transition-all text-sm appearance-none"
+                                    >
+                                        <option value="linear_regression">Linear Regression</option>
+                                        <option value="logistic_regression">Logistic Regression (Classification)</option>
+                                        <option value="random_forest">Random Forest Classifier</option>
+                                        <option value="decision_tree">Decision Tree</option>
+                                        <option value="clustering_kmeans">K-Means Clustering</option>
+                                        <option value="time_series">Time Series Forecasting</option>
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <ChevronRight className="h-4 w-4 rotate-90" />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-300 ml-1">Database Connection String</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Database className="h-5 w-5 text-slate-500" />
+                                <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-1">Database Connection String</label>
+                                <div className="relative group/input">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-cyan-500 transition-colors">
+                                        <Database className="h-5 w-5" />
                                     </div>
                                     <input
                                         type="text"
                                         value={connectionString}
                                         onChange={(e) => setConnectionString(e.target.value)}
                                         placeholder="sqlite:///database.db or postgresql://..."
-                                        className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-100 placeholder-slate-600 transition-all font-mono text-sm"
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 transition-all font-mono text-sm"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 bg-slate-900/30 p-3 rounded-xl border border-slate-700/50">
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="advancedAnalysis"
-                                        checked={advancedAnalysis}
-                                        onChange={(e) => setAdvancedAnalysis(e.target.checked)}
-                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-600 bg-slate-900/50 transition-all checked:border-cyan-500 checked:bg-cyan-500 hover:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
-                                    />
-                                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 peer-checked:opacity-100">
-                                        <ArrowRight className="h-3 w-3 text-white" />
-                                    </div>
-                                </div>
-                                <label htmlFor="advancedAnalysis" className="flex-1 cursor-pointer select-none">
-                                    <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
-                                        <Settings className="h-4 w-4 text-cyan-400" />
+                            <div className="flex items-center gap-3 p-4 bg-cyan-500/5 dark:bg-cyan-500/10 rounded-2xl border border-cyan-500/20">
+                                <input
+                                    type="checkbox"
+                                    id="advanced"
+                                    checked={advancedAnalysis}
+                                    onChange={(e) => setAdvancedAnalysis(e.target.checked)}
+                                    className="w-5 h-5 rounded-lg border-slate-300 text-cyan-500 focus:ring-cyan-500 transition-all"
+                                />
+                                <label htmlFor="advanced" className="text-sm font-medium cursor-pointer">
+                                    <div className="font-bold flex items-center gap-1">
+                                        <Sparkles className="h-3.5 w-3.5 text-cyan-500" />
                                         Advanced Analysis
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        Manually annotation columns to improve AI Context
-                                    </p>
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Manually annotate columns to improve AI Context</div>
                                 </label>
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-left">
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-xs font-medium animate-in zoom-in-95">
                                     {error}
                                 </div>
                             )}
@@ -215,57 +211,46 @@ export default function Dashboard() {
                             <button
                                 onClick={handleAnalyze}
                                 disabled={loading || !connectionString}
-                                className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${loading || !connectionString
-                                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 hover:shadow-cyan-500/40 transform hover:-translate-y-0.5'
-                                    }`}
+                                className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3 group"
                             >
                                 {loading ? (
                                     <>
                                         <Loader className="animate-spin h-5 w-5" />
-                                        Analyzing Schema...
+                                        <span>Analyzing Data...</span>
                                     </>
                                 ) : (
                                     <>
-                                        Analyze Database
-                                        <ArrowRight className="h-5 w-5" />
+                                        <span>Analyze Database</span>
+                                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>
-
-                            <p className="text-xs text-slate-500 text-center">
-                                Supports PostgreSQL, SQLite, MySQL, and more via SQLAlchemy.
-                            </p>
-
-                            <div className="pt-4 border-t border-slate-700/50 text-center">
-                                <button
-                                    onClick={() => navigate('/eda')}
-                                    className="text-cyan-400 hover:text-cyan-300 text-sm font-medium flex items-center justify-center gap-2 mx-auto transition-colors"
-                                >
-                                    <Database className="h-4 w-4" />
-                                    Try the New EDA Copilot
-                                    <ArrowRight className="h-4 w-4" />
-                                </button>
-                            </div>
                         </div>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">
+                            Supports PostgreSQL, SQLite, MySQL, and more via SQLAlchemy.
+                        </p>
                     </div>
                 </div>
 
-                {/* Right Side: Connection Guide (Conditional) */}
-                <div className={`lg:col-span-2 transition-all duration-500 ${showGuide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12 pointer-events-none lg:block lg:opacity-30'}`}>
+                <div className="lg:col-span-2">
                     {showGuide ? (
-                        <ConnectionGuide onSelect={(val) => {
-                            setConnectionString(val);
-                        }} />
+                        <ConnectionGuide onSelect={(val) => setConnectionString(val)} />
                     ) : (
-                        <div className="hidden lg:flex flex-col items-center justify-center h-full text-slate-600 border-2 border-dashed border-slate-800 rounded-3xl p-12 text-center space-y-4">
-                            <div className="p-4 bg-slate-800/30 rounded-full">
-                                <HelpCircle className="h-12 w-12" />
+                        <div className="bg-slate-50 dark:bg-slate-900/30 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-12 flex flex-col items-center justify-center text-center space-y-4 group hover:border-cyan-500/50 transition-colors duration-500">
+                            <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
+                                <HelpCircle className="h-10 w-10 text-slate-300 group-hover:text-cyan-500 transition-colors" />
                             </div>
-                            <p className="text-sm font-medium">Need help with connection strings?</p>
+                            <div className="space-y-2">
+                                <h3 className="font-bold text-slate-400 group-hover:text-slate-300">Need help with connection strings?</h3>
+                                <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                                    Click the help icon or button to see common examples for different databases.
+                                </p>
+                            </div>
                             <button
                                 onClick={() => setShowGuide(true)}
-                                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 transition-all text-sm"
+                                className="px-6 py-2 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-300 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-700 hover:border-cyan-500/50 hover:text-cyan-500 transition-all shadow-md"
                             >
                                 Open Connection Guide
                             </button>
