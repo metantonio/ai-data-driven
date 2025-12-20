@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score, classification_report
 import joblib
 import os
 import json
+import time
 
 # [PLACEHOLDER] Data Loading
 def load_data():
