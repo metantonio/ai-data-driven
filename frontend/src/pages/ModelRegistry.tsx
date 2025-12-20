@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DataTable } from '../components/DataTable';
-import { Trash2, BarChart3, Clock, Trophy, Database, ChevronLeft } from 'lucide-react';
+import { Trash2, BarChart3, Clock, Trophy, Database, ChevronLeft, BrainCircuit } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -99,6 +99,13 @@ const ModelRegistry: React.FC = () => {
                         title="Delete Run"
                     >
                         <Trash2 className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={() => navigate('/sandbox', { state: { run_id: info.row.original.run_id } })}
+                        className="p-1.5 hover:bg-purple-500/10 text-purple-500 rounded-lg transition-colors border border-transparent hover:border-purple-500/20"
+                        title="Open in Sandbox"
+                    >
+                        <BrainCircuit className="h-4 w-4" />
                     </button>
                 </div>
             )

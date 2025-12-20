@@ -22,7 +22,8 @@ class CodeAdaptationAgent:
             "reinforcement_learning": "reinforcement_learning.py",
             "association_rules": "association_rules.py",
             "random_forest": "random_forest.py",
-            "decision_tree": "decision_tree.py"
+            "decision_tree": "decision_tree.py",
+            "auto_ml": "auto_ml.py"
         }
         
         filename = template_map.get(algorithm_type, "linear_regression.py")

@@ -162,6 +162,7 @@ export default function Dashboard() {
                                         <option value="decision_tree">Decision Tree</option>
                                         <option value="clustering_kmeans">K-Means Clustering</option>
                                         <option value="time_series">Time Series Forecasting</option>
+                                        <option value="auto_ml">AutoML Pilot (Multi-algorithm Search)</option>
                                     </select>
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                         <ChevronRight className="h-4 w-4 rotate-90" />

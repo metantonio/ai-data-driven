@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import Visualizations from './pages/Visualizations';
@@ -7,6 +7,7 @@ import EDAPage from './pages/EDA';
 import EDAProgress from './pages/EDAProgress';
 import Settings from './pages/Settings';
 import ModelRegistry from './pages/ModelRegistry';
+import PredictionSandbox from './pages/PredictionSandbox';
 import { Layout } from './components/Layout';
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
                     <Route path="/eda-progress" element={<EDAProgress />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/registry" element={<ModelRegistry />} />
+                    <Route path="/sandbox" element={<PredictionSandbox />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Layout>
         </BrowserRouter>
