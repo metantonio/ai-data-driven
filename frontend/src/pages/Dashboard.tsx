@@ -145,6 +145,13 @@ export default function Dashboard() {
                             >
                                 <Database className="h-6 w-6" />
                             </button>
+                            <button
+                                onClick={() => navigate('/eda')}
+                                className="p-2 bg-slate-100 dark:bg-slate-900/50 text-slate-400 hover:text-cyan-500 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded-xl transition-all"
+                                title="EDA Copilot"
+                            >
+                                <Sparkles className="h-6 w-6 text-cyan-500" />
+                            </button>
                         </div>
 
                         <div className="space-y-6">
