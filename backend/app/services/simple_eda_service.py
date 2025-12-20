@@ -574,33 +574,52 @@ Return a JSON object ONLY (no markdown):
         Returns structured response with message and artifacts.
         """
         query_lower = query.lower()
+        result = None
         
         # Determine what analysis to perform based on query
         if any(word in query_lower for word in ['describe', 'summary', 'overview', 'info']):
-            return self._describe_dataset(df)
+            result = self._describe_dataset(df)
         elif any(word in query_lower for word in ['missing', 'null', 'nan']):
-            return self._analyze_missing_data(df)
+            result = self._analyze_missing_data(df)
         elif any(word in query_lower for word in ['correlation', 'correlate']):
-            return self._analyze_correlations(df)
+            result = self._analyze_correlations(df)
         elif any(word in query_lower for word in ['distribution', 'histogram', 'hist']):
-            return self._analyze_distributions(df)
+            result = self._analyze_distributions(df)
         elif any(word in query_lower for word in ['first', 'head', 'sample', 'rows']) and not 'all' in query_lower:
-            return self._show_sample(df, query)
+            result = self._show_sample(df, query)
         elif any(word in query_lower for word in ['all', 'entire', 'full', 'complete']) and any(word in query_lower for word in ['data', 'rows', 'dataset']):
-            return self._show_all_data(df)
+            result = self._show_all_data(df)
         elif any(word in query_lower for word in ['column', 'columns', 'field', 'fields', 'dtypes', 'types']):
-            return self._show_column_info(df)
+            result = self._show_column_info(df)
         elif any(word in query_lower for word in ['unique', 'distinct', 'values']):
-            return self._show_unique_values(df, query)
+            result = self._show_unique_values(df, query)
         elif any(word in query_lower for word in ['outlier', 'anomal', 'extreme']):
-            return self._detect_outliers(df)
+            result = self._detect_outliers(df)
         elif any(word in query_lower for word in ['count', 'frequency', 'frequencies']):
-            return self._show_value_counts(df, query)
+            result = self._show_value_counts(df, query)
         elif any(word in query_lower for word in ['tail', 'last', 'bottom']):
-            return self._show_tail(df, query)
+            result = self._show_tail(df, query)
         else:
             # Default: provide overview
-            return self._describe_dataset(df)
+            result = self._describe_dataset(df)
+
+        # Integration of Visualization Agent for non-SQL mode
+        # If the analysis didn't already produce a plot, let the viz agent decide
+        if result and 'artifacts' in result and not any(k in result['artifacts'] for k in ['bar_plot', 'heatmap_plot', 'distribution_plot', 'outlier_plot', 'plotly', 'generated_plot']):
+            try:
+                viz_result = self._decide_and_generate_visualization(df, query)
+                if viz_result:
+                    if 'plotly' in viz_result:
+                        result['artifacts']['plotly'] = viz_result['plotly']
+                        result['artifacts']['title'] = viz_result['title']
+                    else:
+                        result['artifacts']['generated_plot'] = viz_result['plot']
+                    
+                    result['ai_message'] += f"\n\n📊 **Visualization generated:** {viz_result['title']}"
+            except Exception as e:
+                print(f"[EDA] Visualization agent failed in analyze_dataset: {e}")
+
+        return result
     
     def generate_reply(self, df: pd.DataFrame, question: str, context: str) -> Dict[str, Any]:
         """

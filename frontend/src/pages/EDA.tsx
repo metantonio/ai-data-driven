@@ -158,6 +158,12 @@ const EDAPage: React.FC = () => {
                 if (rawArtifacts.generated_plot) {
                     artifactList.push({ title: 'AI Generated Analysis', render_type: 'matplotlib', data: rawArtifacts.generated_plot });
                 }
+                if (rawArtifacts.plotly) {
+                    artifactList.push({ title: rawArtifacts.title || 'Interactive Chart', render_type: 'plotly', data: rawArtifacts.plotly });
+                }
+                if (rawArtifacts.sweetviz) {
+                    artifactList.push({ title: 'Sweetviz Report', render_type: 'sweetviz', data: rawArtifacts.sweetviz });
+                }
             }
 
             const aiMessage: Message = {
