@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DataTable } from '../components/DataTable';
-import { Trash2, BarChart3, Clock, Trophy, Database } from 'lucide-react';
+import { Trash2, BarChart3, Clock, Trophy, Database, ChevronLeft } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -19,6 +20,7 @@ const ModelRegistry: React.FC = () => {
     const [runs, setRuns] = useState<ModelRun[]>([]);
     const [selectedRun, setSelectedRun] = useState<ModelRun | null>(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     const fetchRuns = async () => {
         try {
@@ -114,6 +116,13 @@ const ModelRegistry: React.FC = () => {
         <div className="max-w-7xl mx-auto p-6 space-y-8 mt-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all text-slate-400 hover:text-cyan-500 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                        title="Go Back"
+                    >
+                        <ChevronLeft className="h-6 w-6" />
+                    </button>
                     <div className="p-3 bg-cyan-500/10 rounded-2xl border border-cyan-500/20">
                         <Database className="h-8 w-8 text-cyan-500" />
                     </div>
