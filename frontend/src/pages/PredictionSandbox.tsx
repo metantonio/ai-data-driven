@@ -116,14 +116,14 @@ const PredictionSandbox: React.FC = () => {
                         {loading ? (
                             <div className="py-8 flex justify-center"><Loader className="animate-spin h-5 w-5 text-purple-500" /></div>
                         ) : (
-                            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                 {runs.map(run => (
                                     <button
                                         key={run.run_id}
                                         onClick={() => setSelectedRun(run)}
                                         className={`w-full text-left p-3 rounded-xl border transition-all ${selectedRun?.run_id === run.run_id
-                                            ? 'bg-purple-500/10 border-purple-500 text-purple-600 dark:text-purple-400'
-                                            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-purple-500/30'
+                                                ? 'bg-purple-500/10 border-purple-500 text-purple-600 dark:text-purple-400'
+                                                : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-purple-500/30'
                                             }`}
                                     >
                                         <div className="font-bold text-sm truncate">{run.model_type}</div>
@@ -156,16 +156,16 @@ const PredictionSandbox: React.FC = () => {
                     )}
                 </div>
 
-                {/* Input Controls Column */}
-                <div className="lg:col-span-2 space-y-6">
+                {/* Input Controls Column - Wider span */}
+                <div className="lg:col-span-3 space-y-6">
                     {selectedRun ? (
                         <div className="bg-white dark:bg-slate-800/50 p-8 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-xl h-full">
                             <div className="flex items-center gap-2 mb-8 text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100 dark:border-slate-700/50 pb-4">
                                 <Sliders className="h-3 w-3" />
                                 Feature Inputs
                             </div>
-                            <form onSubmit={handlePredict} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <form onSubmit={handlePredict} className="space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {selectedRun.features.map(feature => (
                                         <div key={feature} className="space-y-2">
                                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">{feature.replace(/_/g, ' ')}</label>
@@ -180,14 +180,16 @@ const PredictionSandbox: React.FC = () => {
                                         </div>
                                     ))}
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={predicting}
-                                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-3"
-                                >
-                                    {predicting ? <Loader className="animate-spin h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
-                                    <span>Run Prediction</span>
-                                </button>
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={predicting}
+                                        className="w-full lg:w-max px-12 bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-3"
+                                    >
+                                        {predicting ? <Loader className="animate-spin h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
+                                        <span>Run Prediction</span>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     ) : (
@@ -196,47 +198,48 @@ const PredictionSandbox: React.FC = () => {
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* Result Column */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-8 rounded-3xl shadow-2xl h-full relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-1000"></div>
+            {/* Result Column - NOW IN A FULL ROW */}
+            <div className="w-full">
+                <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group border border-white/5">
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-1000"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-1000"></div>
 
-                        <div className="relative z-10 flex flex-col h-full">
-                            <div className="flex items-center gap-2 mb-8 text-purple-400 font-bold uppercase text-[10px] tracking-widest border-b border-white/5 pb-4">
-                                <Calculator className="h-3 w-3" />
-                                Prediction Result
-                            </div>
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="flex items-center gap-2 mb-8 text-purple-400 font-bold uppercase text-[10px] tracking-widest border-b border-white/5 pb-4 w-full justify-center">
+                            <Calculator className="h-4 w-4" />
+                            Prediction Result
+                        </div>
 
-                            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-                                {prediction !== null ? (
-                                    <div className="animate-in zoom-in-90 duration-500">
-                                        <div className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Estimated Value</div>
-                                        <div className="text-6xl font-black text-white tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
-                                            {typeof prediction === 'number' ?
-                                                (prediction < 1 ? prediction.toFixed(4) : prediction.toLocaleString(undefined, { maximumFractionDigits: 2 }))
-                                                : prediction}
-                                        </div>
-                                        <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 rounded-full border border-emerald-500/30 text-emerald-400 text-xs font-bold animate-pulse">
-                                            <AlertCircle className="h-3.5 w-3.5" />
-                                            Live Inference Ready
-                                        </div>
+                        <div className="flex flex-col items-center justify-center text-center space-y-6 w-full py-10">
+                            {prediction !== null ? (
+                                <div className="animate-in zoom-in-95 duration-500 w-full px-4">
+                                    <div className="text-slate-400 text-sm font-bold uppercase tracking-[0.3em] mb-4">Estimated Value</div>
+                                    <div className="text-6xl md:text-8xl font-black text-white tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-slate-500 break-words w-full">
+                                        {typeof prediction === 'number' ?
+                                            (prediction < 1 && prediction !== 0 ? prediction.toFixed(6) : prediction.toLocaleString(undefined, { maximumFractionDigits: 2 }))
+                                            : String(prediction)}
                                     </div>
-                                ) : (
-                                    <div className="opacity-20 flex flex-col items-center gap-4">
-                                        <Calculator className="h-20 w-20 text-white" />
-                                        <p className="text-sm font-medium text-slate-400 max-w-[150px]">Fill the features and click run to see results</p>
+                                    <div className="mt-12 inline-flex items-center gap-3 px-6 py-3 bg-emerald-500/10 rounded-full border border-emerald-500/20 text-emerald-400 text-sm font-bold tracking-wide">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        Live Inference Ready
                                     </div>
-                                )}
-                            </div>
-
-                            {error && (
-                                <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-2xl text-red-400 text-xs font-medium flex items-start gap-2">
-                                    <AlertCircle className="h-4 w-4 shrink-0" />
-                                    <span>{error}</span>
+                                </div>
+                            ) : (
+                                <div className="opacity-10 flex flex-col items-center gap-6">
+                                    <Calculator className="h-32 w-32 text-white" />
+                                    <p className="text-lg font-medium text-slate-400">Run a prediction to see the result here</p>
                                 </div>
                             )}
                         </div>
+
+                        {error && (
+                            <div className="mt-8 p-6 bg-red-500/10 border border-red-500/20 rounded-3xl text-red-400 text-sm font-medium flex items-center gap-3 animate-in shake duration-500">
+                                <AlertCircle className="h-5 w-5 shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
