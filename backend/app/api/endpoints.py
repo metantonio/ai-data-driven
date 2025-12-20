@@ -141,3 +141,23 @@ async def automatic_eda_endpoint(request: AutomaticEDARequest):
             yield json.dumps(update) + "\n"
 
     return StreamingResponse(event_generator(), media_type="application/x-ndjson")
+
+class ChatInsightsRequest(BaseModel):
+    query: str
+    history: List[Dict[str, str]]
+    execution_report: Dict[str, Any]
+    algorithm_type: str = "unknown"
+
+@router.post("/chat-insights")
+def chat_insights(request: ChatInsightsRequest):
+    try:
+        agent = InsightsAgent(llm_service)
+        response = agent.chat_with_insights(
+            request.query, 
+            request.history, 
+            request.execution_report, 
+            request.algorithm_type
+        )
+        return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

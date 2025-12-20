@@ -3,10 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { adaptCode, executeCodeStream, generateInsights, ExecutionReport, predict } from '../api/client';
 import { ChevronLeft, CheckCircle, Loader, AlertTriangle, Code, Download, Play, BarChart2, FileText, Calculator, Copy, Check } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import ReactMarkdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css';
 import { Stepper } from '../components/Stepper';
+import InsightChat from '../components/InsightChat';
 
 function PredictionForm({ modelPath, features }: { modelPath: string, features: string[] }) {
     const [formData, setFormData] = useState<Record<string, string>>({});
@@ -473,9 +471,46 @@ export default function Results() {
                                     ))}
                                 </div>
                                 <div className="text-sm text-slate-400 flex flex-wrap gap-2 pt-2 border-t border-slate-800">
-                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300 border border-white/5">Target: {executionResult.report.target || 'N/A'}</span>
+                                    <span className="bg-slate-950 px-2 py-1 rounded text-slate-300 border border-white/5">Target: {executionResult.report.target || 'is_anomaly'}</span>
                                     <span className="bg-slate-950 px-2 py-1 rounded text-slate-300 border border-white/5">Features: {executionResult.report.features?.length || 0}</span>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Top Anomalies Table (Anomaly Detection Specific) */}
+                        {algorithmType === 'anomaly_detection' && executionResult?.report?.top_anomalies && (
+                            <div className="bg-slate-800/80 border border-red-500/30 p-6 rounded-2xl shadow-xl space-y-4 animate-in fade-in duration-700">
+                                <div className="flex items-center gap-2 text-red-400">
+                                    <AlertTriangle className="h-5 w-5" />
+                                    <h3 className="font-bold text-lg">Top 10 Anomalies Detected</h3>
+                                </div>
+                                <div className="overflow-x-auto rounded-xl border border-slate-700">
+                                    <table className="w-full text-xs text-left">
+                                        <thead className="bg-slate-900/50 text-slate-400 font-bold uppercase tracking-widest">
+                                            <tr>
+                                                {Object.keys(executionResult.report.top_anomalies[0] || {}).filter(k => k !== 'is_anomaly' && k !== 'anomaly_score').slice(0, 4).map(k => (
+                                                    <th key={k} className="px-4 py-3">{k.replace(/_/g, ' ')}</th>
+                                                ))}
+                                                <th className="px-4 py-3 text-red-400">Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-700">
+                                            {executionResult.report.top_anomalies.map((row: any, i: number) => (
+                                                <tr key={i} className="hover:bg-slate-700/30 transition-colors">
+                                                    {Object.entries(row).filter(([k]) => k !== 'is_anomaly' && k !== 'anomaly_score').slice(0, 4).map(([_, v]: any, j) => (
+                                                        <td key={j} className="px-4 py-3 text-slate-300">
+                                                            {typeof v === 'number' ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(v)}
+                                                        </td>
+                                                    ))}
+                                                    <td className="px-4 py-3 font-mono font-bold text-red-400">
+                                                        {row.anomaly_score?.toFixed(4)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className="text-[10px] text-slate-500 italic">Lower scores indicate more extreme outliers.</p>
                             </div>
                         )}
 
@@ -545,30 +580,19 @@ export default function Results() {
                             </div>
                             {insights && <CopyButton text={insights} label="Copy Report" />}
                         </div>
-                        <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 text-slate-200 leading-relaxed shadow-xl backdrop-blur-sm max-h-[750px]" style={{ overflowY: 'auto' }}>
-                            <div className="prose prose-invert prose-lg max-w-none">
-                                {insights ? (
-                                    <ReactMarkdown
-                                        rehypePlugins={[rehypeHighlight]}
-                                        components={{
-                                            p: ({ node, ...props }) => <p className="mb-4 whitespace-pre-wrap" {...props} />
-                                        }}
-                                    >
-                                        {insights}
-                                    </ReactMarkdown>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center gap-4 py-8 text-slate-500 italic">
-                                        {stage === 'insight' ? (
-                                            <>
-                                                <Loader className="animate-spin h-8 w-8 text-yellow-500" />
-                                                <span>Analyzing results and generating insights...</span>
-                                            </>
-                                        ) : (
-                                            <span>Waiting for report generation...</span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                        <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden shadow-xl backdrop-blur-sm">
+                            {insights || stage === 'insight' ? (
+                                <InsightChat
+                                    executionReport={executionResult?.report}
+                                    algorithmType={algorithmType}
+                                    initialInsight={insights}
+                                />
+                            ) : (
+                                <div className="h-[600px] flex flex-col items-center justify-center gap-4 py-8 text-slate-500 italic">
+                                    <FileText className="h-16 w-16 opacity-20" />
+                                    <span>Waiting for report generation...</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

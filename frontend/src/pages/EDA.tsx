@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import Plot from 'react-plotly.js';
-import { Database, Send, Loader, Sparkles, ArrowLeft, Reply } from 'lucide-react';
+import { Database, Send, Loader, Sparkles, ArrowLeft, Reply, Star, Bookmark, Trash2, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Stepper } from '../components/Stepper';
 import { DataTable } from '../components/DataTable';
@@ -32,6 +32,8 @@ const EDAPage: React.FC = () => {
     const [connectionString, setConnectionString] = useState('sqlite:///../example.db');
     const [useSqlAgent, setUseSqlAgent] = useState(false);
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
+    const [showLibrary, setShowLibrary] = useState(false);
+    const [favorites, setFavorites] = useState<any[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -39,6 +41,42 @@ const EDAPage: React.FC = () => {
     };
 
     useEffect(scrollToBottom, [messages]);
+
+    const fetchFavorites = async () => {
+        try {
+            const resp = await api.get('/sql/favorites');
+            setFavorites(resp.data);
+        } catch (err) {
+            console.error("Failed to fetch favorites", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchFavorites();
+    }, []);
+
+    const saveFavorite = async (title: string, query: string) => {
+        try {
+            await api.post('/sql/favorites', {
+                title,
+                query,
+                connection_string: connectionString
+            });
+            fetchFavorites();
+        } catch (err) {
+            alert("Failed to save to library");
+        }
+    };
+
+    const deleteFavorite = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await api.delete(`/sql/favorites/${id}`);
+            setFavorites(favorites.filter(f => f.id !== id));
+        } catch (err) {
+            alert("Failed to delete favorite");
+        }
+    };
 
     const handleReply = (messageIndex: number) => {
         const message = messages[messageIndex];
@@ -200,6 +238,15 @@ const EDAPage: React.FC = () => {
                                         <span className={`text-xs font-bold uppercase ${attempt.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                                             Attempt {attempt.attempt}: {attempt.status}
                                         </span>
+                                        {attempt.status === 'success' && (
+                                            <button
+                                                onClick={() => saveFavorite(`Query for ${messages[messages.length - 1]?.context || 'Analysis'}`, attempt.sql)}
+                                                className="p-1 hover:bg-white/10 rounded transition-colors text-yellow-500"
+                                                title="Save to Library"
+                                            >
+                                                <Star className="h-4 w-4" />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="bg-slate-950/50 p-2 rounded border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto">
                                         {attempt.sql}
@@ -244,6 +291,15 @@ const EDAPage: React.FC = () => {
                     </h1>
                 </div>
                 <p className="text-slate-400 text-sm">Explore your data with AI-powered analysis</p>
+
+                {/* Library Button */}
+                <button
+                    onClick={() => setShowLibrary(true)}
+                    className="absolute right-0 top-0 flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700/50 transition-all font-bold"
+                >
+                    <Bookmark className="h-4 w-4" />
+                    Library ({favorites.length})
+                </button>
             </div>
 
             {/* Connection String Input */}
@@ -421,6 +477,62 @@ const EDAPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* SQL Library Sidebar/Overlay */}
+            {showLibrary && (
+                <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowLibrary(false)}></div>
+                    <div className="relative w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden">
+                        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+                            <div className="flex items-center gap-3 text-cyan-400">
+                                <Bookmark className="h-6 w-6" />
+                                <h2 className="text-xl font-bold">SQL Library</h2>
+                            </div>
+                            <button onClick={() => setShowLibrary(false)} className="text-slate-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg">✕</button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                            {favorites.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-4 py-20 opacity-40">
+                                    <Bookmark className="h-16 w-16" />
+                                    <p className="max-w-[200px]">Save your favorite AI-generated queries to find them here later.</p>
+                                </div>
+                            ) : (
+                                favorites.map(fav => (
+                                    <div key={fav.id} className="group bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 hover:border-cyan-500/30 transition-all hover:bg-slate-800">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h3 className="text-sm font-bold text-slate-200 line-clamp-1">{fav.title}</h3>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => { setInput(fav.query); setShowLibrary(false); }}
+                                                    className="p-1.5 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-colors"
+                                                    title="Use query"
+                                                >
+                                                    <Play className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => deleteFavorite(fav.id, e)}
+                                                    className="p-1.5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/50 font-mono text-[10px] text-slate-400 overflow-x-auto mb-2 select-all">
+                                            {fav.query}
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 flex justify-between items-center">
+                                            <span>{fav.timestamp}</span>
+                                            <span className="truncate max-w-[150px]">{fav.connection_string}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

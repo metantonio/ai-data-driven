@@ -32,3 +32,28 @@ class InsightsAgent:
         
         insights = self.llm.generate_response(prompt)
         return insights
+
+    def chat_with_insights(self, query: str, history: list, execution_report: dict, model_type: str) -> str:
+        """
+        Handles a conversational follow-up query using the provided history.
+        """
+        history_str = ""
+        for msg in history[-5:]: # Keep last 5 messages for context
+            role = "User" if msg['role'] == 'user' else "AI"
+            history_str += f"{role}: {msg['content']}\n"
+
+        prompt = f"""
+        You are a Data Analyst expert. You are having a conversation with a user about a Machine Learning model execution.
+        
+        Model Type: {model_type}
+        Execution Results: {execution_report}
+        
+        Conversation History:
+        {history_str}
+        
+        User's latest question: {query}
+        
+        Provide a helpful and technical but understandable response based on the model results. 
+        If they ask for something not in the report, politely explain that you only have access to these specific results.
+        """
+        return self.llm.generate_response(prompt)

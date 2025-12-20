@@ -23,6 +23,7 @@ export interface ExecutionReport {
     model_path?: string;
     visualization_data?: any[];
     shap_importance?: Record<string, number>;
+    top_anomalies?: any[];
 }
 
 export const analyzeSchema = async (connectionString: string, algorithmType: string) => {
