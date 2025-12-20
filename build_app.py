@@ -58,6 +58,7 @@ def build_app():
         "--collect-all plotly "
         "--collect-all shap "
         "--collect-all xgboost "
+        "--collect-all scipy "
         "--collect-all lightgbm "
         "--collect-all imblearn "
         "--add-data \"static;static\" "
