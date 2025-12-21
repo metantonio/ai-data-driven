@@ -41,6 +41,7 @@ class Settings(BaseModel):
     LLM_MODEL: str
     DATABASE_URL: str
     LLM_API_KEY: str = "mock"
+    MAX_RETRIES: int = 2
 
 @router.get("/settings")
 def get_settings():
@@ -51,6 +52,7 @@ def get_settings():
         "LLM_MODEL": os.getenv("LLM_MODEL", "qwen2.5-coder:7b"),
         "DATABASE_URL": os.getenv("DATABASE_URL", "sqlite:///../example.db"),
         "LLM_API_KEY": os.getenv("LLM_API_KEY", "mock"),
+        "MAX_RETRIES": int(os.getenv("MAX_RETRIES", "2")),
     }
 
 @router.post("/settings")
@@ -60,12 +62,16 @@ def update_settings(settings: Settings):
         if not ENV_PATH.exists():
             with open(ENV_PATH, "w") as f:
                 f.write("")
+        
+        # Enforce hard limit of 50 for retries (51 attempts total)
+        validated_retries = min(max(settings.MAX_RETRIES, 0), 49)
             
         set_key(str(ENV_PATH.absolute()), "LLM_PROVIDER", settings.LLM_PROVIDER)
         set_key(str(ENV_PATH.absolute()), "LLM_API_URL", settings.LLM_API_URL)
         set_key(str(ENV_PATH.absolute()), "LLM_MODEL", settings.LLM_MODEL)
         set_key(str(ENV_PATH.absolute()), "DATABASE_URL", settings.DATABASE_URL)
         set_key(str(ENV_PATH.absolute()), "LLM_API_KEY", settings.LLM_API_KEY)
+        set_key(str(ENV_PATH.absolute()), "MAX_RETRIES", str(validated_retries))
         
         # Reload environment variables for the current process
         load_dotenv(dotenv_path=ENV_PATH, override=True)

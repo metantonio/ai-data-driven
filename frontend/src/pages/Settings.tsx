@@ -9,7 +9,8 @@ export default function Settings() {
         LLM_API_URL: '',
         LLM_MODEL: '',
         LLM_API_KEY: '',
-        DATABASE_URL: ''
+        DATABASE_URL: '',
+        MAX_RETRIES: 2
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -197,6 +198,31 @@ export default function Settings() {
                             </div>
                             <p className="text-[10px] text-slate-500 italic ml-1">
                                 Used as the default starting point for new analysis pipelines.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Maximum Repair Retries</label>
+                            <div className="flex items-center gap-4">
+                                <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Cpu className="h-4 w-4 text-slate-500" />
+                                    </div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="49"
+                                        value={config.MAX_RETRIES}
+                                        onChange={(e) => setConfig({ ...config, MAX_RETRIES: parseInt(e.target.value) || 0 })}
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-slate-100 placeholder-slate-600 transition-all font-mono text-sm"
+                                    />
+                                </div>
+                                <div className="text-xs text-slate-400 bg-slate-700/50 px-3 py-2 rounded-lg border border-slate-600">
+                                    Total attempts: <span className="text-cyan-400 font-bold">{(config.MAX_RETRIES || 0) + 1}</span>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-slate-500 italic ml-1">
+                                How many times the AI should try to fix failing code before stopping (Max: 49 retries / 50 total attempts).
                             </p>
                         </div>
                     </div>

@@ -105,7 +105,8 @@ async def execute_code_endpoint(request: ExecuteRequest):
         # Ensure schema_analysis is passed, default to empty dict if None
         analysis = request.schema_analysis or {}
         
-        async for update in executor.execute_code(request.code, analysis, llm_service):
+        max_retries = int(os.getenv("MAX_RETRIES", "2"))
+        async for update in executor.execute_code(request.code, analysis, llm_service, max_retries=max_retries):
             yield json.dumps(update) + "\n"
 
     return StreamingResponse(event_generator(), media_type="application/x-ndjson")

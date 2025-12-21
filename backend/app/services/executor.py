@@ -7,7 +7,7 @@ import asyncio
 from app.agents.error_analysis import ErrorAnalysisAgent
 
 class ExecutorService:
-    async def execute_code(self, code: str, schema_analysis: dict, llm_service):
+    async def execute_code(self, code: str, schema_analysis: dict, llm_service, max_retries: int = 2):
         """
         Executes the provided Python code.
         Yields status updates: {"status": "info" | "error" | "success" | "fixing" | "final_error", "message": str, "data": ...}
@@ -18,8 +18,6 @@ class ExecutorService:
         except Exception as startup_error:
              yield {"status": "final_error", "message": f"Executor startup failed: {str(startup_error)}", "data": {"code": code}}
              return
-
-        max_retries = 2
         current_code = code
         attempt = 0
         error_history = []  # Track previous errors to avoid repeating fixes
