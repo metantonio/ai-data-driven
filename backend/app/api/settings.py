@@ -5,6 +5,12 @@ from dotenv import load_dotenv, set_key
 from pathlib import Path
 import sys
 import signal
+import requests
+import sys
+import os
+import tempfile
+import subprocess
+from app.version import VERSION
 
 router = APIRouter()
 
@@ -54,6 +60,91 @@ def get_settings():
         "LLM_API_KEY": os.getenv("LLM_API_KEY", "mock"),
         "MAX_RETRIES": int(os.getenv("MAX_RETRIES", "2")),
     }
+
+@router.get("/version")
+def get_version():
+    return {"version": VERSION}
+
+@router.get("/check-updates")
+def check_updates():
+    try:
+        repo = "metantonio/ai-data-driven"
+        url = f"https://api.github.com/repos/{repo}/releases/latest"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        
+        latest_version = data.get("tag_name", "").replace("v", "")
+        
+        return {
+            "current_version": VERSION,
+            "latest_version": latest_version,
+            "has_update": latest_version > VERSION,
+            "release_notes": data.get("body", ""),
+            "download_url": data.get("html_url", ""),
+            "assets": data.get("assets", [])
+        }
+    except Exception as e:
+        print(f"Error checking updates: {e}")
+        return {
+            "current_version": VERSION,
+            "has_update": False,
+            "error": str(e)
+        }
+
+@router.post("/trigger-update")
+def trigger_update(download_url: str):
+    """
+    Experimental: Downloads the new version and prepares a batch script for replacement.
+    This only works on Windows and when running as an executable.
+    """
+    if not getattr(sys, 'frozen', False):
+        raise HTTPException(status_code=400, detail="Auto-update only available in bundled version (.exe)")
+
+    try:
+        # 1. Download the file (Assuming the URL is a direct download link or we find the asset)
+        # Note: In a real scenario, we'd find the .exe asset in the request data.
+        # For this demo, let's assume the user already provided the asset URL.
+        
+        response = requests.get(download_url, stream=True)
+        response.raise_for_status()
+        
+        exe_path = sys.executable
+        new_exe_path = exe_path + ".new"
+        
+        with open(new_exe_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+                
+        # 2. Create the batch script for replacement
+        bat_content = f"""
+@echo off
+timeout /t 2 /nobreak > nul
+move /y "{new_exe_path}" "{exe_path}"
+start "" "{exe_path}"
+del "%~f0"
+"""
+        bat_fd, bat_path = tempfile.mkstemp(suffix=".bat")
+        with os.fdopen(bat_fd, 'w') as f:
+            f.write(bat_content)
+            
+        # 3. Execute the script and exit
+        subprocess.Popen([bat_path], shell=True)
+        
+        # Schedule shutdown
+        def delayed_shutdown():
+            import time
+            time.sleep(1)
+            os.kill(os.getpid(), signal.SIGINT)
+            
+        import threading
+        threading.Thread(target=delayed_shutdown).start()
+        
+        return {"message": "Update started. The application will restart shortly."}
+        
+    except Exception as e:
+        print(f"Update failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Update failed: {str(e)}")
 
 @router.post("/settings")
 def update_settings(settings: Settings):

@@ -192,3 +192,27 @@ export const shutdownApp = async () => {
     const response = await api.post('/settings/shutdown');
     return response.data;
 };
+
+export const getVersion = async (): Promise<{ version: string }> => {
+    const response = await api.get('/version');
+    return response.data;
+};
+
+export interface UpdateInfo {
+    current_version: string;
+    latest_version?: string;
+    has_update: boolean;
+    release_notes?: string;
+    download_url?: string;
+    error?: string;
+}
+
+export const checkUpdates = async (): Promise<UpdateInfo> => {
+    const response = await api.get('/check-updates');
+    return response.data;
+};
+
+export const triggerUpdate = async (downloadUrl: string): Promise<{ message: string }> => {
+    const response = await api.post('/trigger-update', null, { params: { download_url: downloadUrl } });
+    return response.data;
+};

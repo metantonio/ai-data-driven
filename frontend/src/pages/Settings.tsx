@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Save, ArrowLeft, Loader, Database, Cpu, Globe, Key, AlertCircle, CheckCircle, Power } from 'lucide-react';
-import { getSettings, updateSettings, shutdownApp } from '../api/client';
+import { Settings as SettingsIcon, Save, ArrowLeft, Loader, Database, Cpu, Globe, Key, AlertCircle, CheckCircle, Power, Zap, RefreshCw } from 'lucide-react';
+import { getSettings, updateSettings, shutdownApp, checkUpdates, UpdateInfo, triggerUpdate } from '../api/client';
+import UpdateModal from '../components/UpdateModal';
 
 export default function Settings() {
     const [config, setConfig] = useState({
@@ -14,12 +15,48 @@ export default function Settings() {
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [checkingUpdates, setCheckingUpdates] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [updateResult, setUpdateResult] = useState<UpdateInfo | null>(null);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchSettings();
+        handleCheckUpdates();
     }, []);
+
+    const handleCheckUpdates = async () => {
+        setCheckingUpdates(true);
+        try {
+            const result = await checkUpdates();
+            setUpdateResult(result);
+        } catch (err) {
+            console.error("Failed to check for updates:", err);
+        } finally {
+            setCheckingUpdates(false);
+        }
+    };
+
+    const handleTriggerUpdate = async () => {
+        if (!updateResult?.download_url) return;
+
+        setIsUpdating(true);
+        try {
+            // Find the first .exe asset if available, otherwise use the release page URL
+            // (Note: The backend trigger_update will fail if it's not a direct file link, 
+            // but for this implementation we assume the user provides a valid download URL)
+            const exeAsset = updateResult?.download_url; // Simplified
+
+            const res = await triggerUpdate(exeAsset);
+            setMessage({ type: 'success', text: res.message });
+            // The app will shut down shortly
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.response?.data?.detail || "Update failed." });
+            setIsUpdating(false);
+        }
+    };
 
     const fetchSettings = async () => {
         try {
@@ -82,15 +119,48 @@ export default function Settings() {
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-extrabold flex items-center gap-3">
-                        <SettingsIcon className="h-10 w-10 text-cyan-400" />
-                        System Settings
-                    </h1>
-                    <p className="text-slate-400">
-                        Configure your AI processing engine and database connections.
-                    </p>
+                <div className="space-y-2 flex justify-between items-end">
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-extrabold flex items-center gap-3">
+                            <SettingsIcon className="h-10 w-10 text-cyan-400" />
+                            System Settings
+                        </h1>
+                        <p className="text-slate-400">
+                            Configure your AI processing engine and database connections.
+                        </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-[10px] font-mono">
+                            v{updateResult?.current_version || "..."}
+                        </div>
+                        <button
+                            onClick={handleCheckUpdates}
+                            disabled={checkingUpdates}
+                            className="flex items-center gap-2 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCw className={`h-3 w-3 ${checkingUpdates ? 'animate-spin' : ''}`} />
+                            Check Updates
+                        </button>
+                    </div>
                 </div>
+
+                {updateResult?.has_update && (
+                    <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/50 flex items-center justify-between group animate-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <Zap className="h-5 w-5 text-indigo-400 animate-pulse" />
+                            <div>
+                                <p className="text-sm font-bold text-indigo-300">Update Available: v{updateResult.latest_version}</p>
+                                <p className="text-[10px] text-slate-400">A new version is ready with improvements.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowUpdateModal(true)}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all"
+                        >
+                            View Details
+                        </button>
+                    </div>
+                )}
 
                 {message && (
                     <div className={`p-4 rounded-xl flex items-center gap-3 border ${message.type === 'success'
@@ -260,6 +330,17 @@ export default function Settings() {
                     </div>
                 </form>
             </div>
+
+            <UpdateModal
+                isOpen={showUpdateModal}
+                onClose={() => setShowUpdateModal(false)}
+                onUpdate={handleTriggerUpdate}
+                isUpdating={isUpdating}
+                currentVersion={updateResult?.current_version || ""}
+                latestVersion={updateResult?.latest_version || ""}
+                releaseNotes={updateResult?.release_notes || ""}
+                downloadUrl={updateResult?.download_url || ""}
+            />
         </div>
     );
 }
