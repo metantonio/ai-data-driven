@@ -82,15 +82,20 @@ class DatabaseInspector:
 
         self.inspector = inspect(self.engine)
 
-    def get_llm_schema_context(self) -> str:
+    def get_llm_schema_context(self, table_names: List[str] = None) -> str:
         """
         Returns a text-based representation of the schema specifically formatted for LLM consumption.
         Focuses on table names, columns, and foreign keys in a structured format.
+        If table_names is provided, only those tables are included.
         """
         summary = self.get_schema_summary()
         context_lines = ["DATABASE SCHEMA:"]
         
-        for table_name, table_info in summary["tables"].items():
+        tables_to_include = summary["tables"]
+        if table_names:
+            tables_to_include = {name: info for name, info in summary["tables"].items() if name in table_names}
+
+        for table_name, table_info in tables_to_include.items():
             context_lines.append(f"\nTABLE: {table_name}")
             
             # Columns

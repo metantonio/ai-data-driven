@@ -29,9 +29,10 @@ class AutomaticEDAAgent:
             
             if ml_objective:
                 yield {"status": "info", "message": "Crafting custom SQL query for your objective...", "data": None}
-                # Get schema context for SQL generation
+                # Get schema context for SQL generation - only for relevant tables
                 inspector = DatabaseInspector(resolved_connection_string)
-                schema_context = inspector.get_llm_schema_context()
+                selected_tables = list(user_comments.keys()) if user_comments else None
+                schema_context = inspector.get_llm_schema_context(table_names=selected_tables)
                 
                 sql_prompt = f"""
                 You are a SQL expert and Data Scientist. Based on the following database schema and the user's Machine Learning objective, generate a single SQL SELECT query that joins necessary tables and selects relevant columns to build a dataset for this model.
