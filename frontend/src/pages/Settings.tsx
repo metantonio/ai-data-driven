@@ -339,7 +339,6 @@ export default function Settings() {
                 currentVersion={updateResult?.current_version || ""}
                 latestVersion={updateResult?.latest_version || ""}
                 releaseNotes={updateResult?.release_notes || ""}
-                downloadUrl={updateResult?.download_url || ""}
             />
         </div>
     );

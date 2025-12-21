@@ -9,7 +9,6 @@ interface UpdateModalProps {
     currentVersion: string;
     latestVersion: string;
     releaseNotes: string;
-    downloadUrl: string;
 }
 
 export default function UpdateModal({
@@ -20,7 +19,6 @@ export default function UpdateModal({
     currentVersion,
     latestVersion,
     releaseNotes,
-    downloadUrl
 }: UpdateModalProps) {
     if (!isOpen) return null;
 
