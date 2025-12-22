@@ -39,27 +39,124 @@ class ExecutorService:
             try:
                 yield {"status": "info", "message": "Running pipeline script...", "data": {"code": current_code}}
                 
-                def run_sync():
-                    return subprocess.run(
-                        [sys.executable, temp_file_path],
-                        capture_output=True,
-                        text=True,
-                        encoding='utf-8'
-                    )
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, temp_file_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+
+                stdout_chunks = []
+                async def read_stream(stream, status_prefix):
+                    while True:
+                        line = await stream.readline()
+                        if not line:
+                            break
+                        line_str = line.decode('utf-8', errors='replace').rstrip()
+                        if line_str:
+                            if status_prefix == "stdout":
+                                stdout_chunks.append(line_str)
+                            # Yielding info for every line to keep connection alive
+                            # We check if it's a JSON line at the end, but intermediate lines are useful logs
+                            yield {"status": "info", "message": line_str}
+
+                # Create tasks to read stdout and stderr concurrently
+                async def consume_stdout():
+                    async for update in read_stream(process.stdout, "stdout"):
+                        yield update
+
+                # For stderr, we just collect it to handle errors later, but we could also stream it
+                stderr_chunks = []
+                async def consume_stderr():
+                    while True:
+                        line = await process.stderr.readline()
+                        if not line:
+                            break
+                        line_str = line.decode('utf-8', errors='replace').rstrip()
+                        if line_str:
+                            stderr_chunks.append(line_str)
+                            yield {"status": "info", "message": f"LOG: {line_str}"}
+
+                # We use a helper to merge these streams for the yield
+                async def merged_streams():
+                    tasks = [
+                        asyncio.create_task(consume_stdout().__anext__()),
+                        asyncio.create_task(consume_stderr().__anext__())
+                    ]
+                    # This is a bit complex for a simple yield. Let's simplify.
                 
-                result = await asyncio.to_thread(run_sync)
-                stdout = result.stdout
-                stderr = result.stderr
-                return_code = result.returncode
+                # Simplified approach: Read stdout and stderr in the main loop or tasks
+                async def stream_output(stream, is_stderr=False):
+                    while True:
+                        line = await stream.readline()
+                        if not line:
+                            break
+                        line_str = line.decode('utf-8', errors='replace').rstrip()
+                        if line_str:
+                            if is_stderr:
+                                stderr_chunks.append(line_str)
+                                yield {"status": "info", "message": f"[STDERR] {line_str}"}
+                            else:
+                                stdout_chunks.append(line_str)
+                                try:
+                                    # Try to see if it's the final JSON report to avoid double-logging it as info
+                                    json.loads(line_str)
+                                except:
+                                    yield {"status": "info", "message": line_str}
+
+                # Create an async generator that merges both streams
+                async def get_all_updates():
+                    stdout_gen = stream_output(process.stdout, False)
+                    stderr_gen = stream_output(process.stderr, True)
+                    
+                    next_stdout = asyncio.ensure_future(stdout_gen.__anext__())
+                    next_stderr = asyncio.ensure_future(stderr_gen.__anext__())
+                    
+                    while True:
+                        done, pending = await asyncio.wait(
+                            [next_stdout, next_stderr],
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
+                        
+                        if next_stdout in done:
+                            try:
+                                yield await next_stdout
+                                next_stdout = asyncio.ensure_future(stdout_gen.__anext__())
+                            except StopAsyncIteration:
+                                next_stdout = None
+                                
+                        if next_stderr in done:
+                            try:
+                                yield await next_stderr
+                                next_stderr = asyncio.ensure_future(stderr_gen.__anext__())
+                            except StopAsyncIteration:
+                                next_stderr = None
+                                
+                        if next_stdout is None and next_stderr is None:
+                            break
+                        
+                        # If one is None, we just wait for the other
+                        if next_stdout is None:
+                            await asyncio.wait([next_stderr])
+                            continue
+                        if next_stderr is None:
+                            await asyncio.wait([next_stdout])
+                            continue
+
+                async for update in get_all_updates():
+                    yield update
+
+                return_code = await process.wait()
+                stdout = "\n".join(stdout_chunks)
+                stderr = "\n".join(stderr_chunks)
 
                 if return_code == 0:
                     try:
-                        lines = stdout.strip().split('\n')
-                        last_line = lines[-1] if lines else "{}"
+                        # Extract the last line for the JSON report
+                        last_line = stdout_chunks[-1] if stdout_chunks else "{}"
                         report = json.loads(last_line)
                         yield {"status": "success", "message": "Execution successful", "data": {"stdout": stdout, "stderr": stderr, "report": report, "code": current_code}}
                         return
-                    except json.JSONDecodeError:
+                    except (json.JSONDecodeError, IndexError):
                         yield {"status": "success", "message": "Execution finished (no JSON report)", "data": {"stdout": stdout, "stderr": stderr, "report": None, "code": current_code}}
                         return
                 

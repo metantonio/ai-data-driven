@@ -53,6 +53,7 @@ def main():
         
         # 6. SHAP Explanations
         import shap
+        print("Calculating SHAP values for feature importance... (this may take a moment)")
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(X_test)
         
