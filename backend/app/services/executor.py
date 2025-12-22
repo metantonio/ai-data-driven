@@ -122,25 +122,30 @@ class ExecutorService:
                     yield {"status": "info", "message": "Pipeline failed. AI is analyzing the cause...", "data": {"stderr": stderr}}
                     
                     try:
+                        # Truncate stderr to avoid context overflow (last 2000 chars are usually enough for the traceback)
+                        truncated_stderr = stderr[-2000:] if len(stderr) > 2000 else stderr
+                        
                         # Use heartbeat for analysis
                         async for update in self._run_with_heartbeat(
-                            error_analyzer.analyze_error, current_code, stderr, schema_analysis,
+                            error_analyzer.analyze_error, current_code, truncated_stderr, schema_analysis,
                             status="info", message="AI is analyzing the error details..."
                         ):
                             if isinstance(update, dict) and "status" in update and update["status"] == "info":
                                 yield update
                             else:
                                 error_summary = update
-                        
                         yield {"status": "error", "message": error_summary, "data": {"stderr": stderr, "is_ai_summary": True}}
                     except Exception as e:
-                        error_summary = f"Pipeline execution failed. Error: {stderr[-500:]}"
+                        error_summary = f"Pipeline execution failed. Raw error: {stderr[-500:]}"
                         yield {"status": "error", "message": error_summary, "data": {"stderr": stderr}}
+
+                    # Focus on the end of the error for the summary/history
+                    short_error = stderr[-500:] if len(stderr) > 500 else stderr
 
                     # Add to error history
                     error_history.append({
                         "attempt": attempt,
-                        "error": stderr[-500:],  # Last 500 chars to keep it manageable
+                        "error": short_error,
                         "summary": error_summary
                     })
 
@@ -149,9 +154,12 @@ class ExecutorService:
                         
                         try:
                             adapter = CodeAdaptationAgent(llm_service)
+                            # Truncate stderr for the fixer as well
+                            truncated_stderr = stderr[-2000:] if len(stderr) > 2000 else stderr
+                            
                             # Use heartbeat for fixing
                             async for update in self._run_with_heartbeat(
-                                adapter.fix_code, current_code, stderr, schema_analysis, error_summary, error_history,
+                                adapter.fix_code, current_code, truncated_stderr, schema_analysis, error_summary, error_history,
                                 status="fixing", message="AI is generating a fixed version of the code..."
                             ):
                                 if isinstance(update, dict) and "status" in update and update["status"] == "fixing":

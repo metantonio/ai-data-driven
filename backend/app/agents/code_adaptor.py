@@ -181,8 +181,15 @@ class CodeAdaptationAgent:
         history_section = ""
         if error_history and len(error_history) > 1:
             history_section = "\n\nPREVIOUS FAILED ATTEMPTS:\n"
-            for entry in error_history[:-1]:  # Exclude current error (last one)
-                history_section += f"Attempt {entry['attempt']}: {entry['summary'][:200]}...\n"
+            # The current error is the last one in error_history list (added in executor.py before calling fix_code)
+            # We want to show only the failed attempts BEFORE this one.
+            # Usually error_history is [failed1, failed2, current_failed]
+            previous_attempts = error_history[:-1]
+            # Limit to last 3 previous attempts
+            recent_history = previous_attempts[-3:] if len(previous_attempts) > 3 else previous_attempts
+            
+            for entry in recent_history:
+                history_section += f"Attempt {entry['attempt']}: {entry['summary'][:300]}...\n"
             history_section += "\nIMPORTANT: The above fixes DID NOT WORK. Try a DIFFERENT approach.\n"
         
         ml_objective = schema_analysis.get('ml_objective')
