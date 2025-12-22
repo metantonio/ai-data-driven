@@ -101,7 +101,7 @@ def build_app():
     run_command(pyinstaller_cmd, cwd=str(backend_dir))
 
     print("\n--- Success! ---")
-    print(f"Your executable can be found in: {backend_dir / 'dist' / app_name + '.exe'}")
+    print(f"Your executable can be found in: {backend_dir / 'dist' / (app_name + '.exe')}")
 
 if __name__ == "__main__":
     build_app()
