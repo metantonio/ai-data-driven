@@ -4,6 +4,9 @@ import os
 import json
 import sys
 import asyncio
+import threading
+import queue
+
 from app.agents.error_analysis import ErrorAnalysisAgent
 from app.agents.code_adaptor import CodeAdaptationAgent
 
@@ -14,7 +17,7 @@ class ExecutorService:
         while not task.done():
             yield {"status": status, "message": message}
             try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=5.0)
+                await asyncio.wait_for(asyncio.shield(task), timeout=3.0)
             except asyncio.TimeoutError:
                 continue
         yield await task
@@ -46,117 +49,60 @@ class ExecutorService:
                 yield {"status": "final_error", "message": f"Failed to write temp file: {str(write_error)}", "data": None}
                 return
 
-            # 2. Run Subprocess
+            # 2. Run Subprocess using a thread-safe approach for Windows compatibility
             try:
                 yield {"status": "info", "message": "Running pipeline script...", "data": {"code": current_code}}
                 
-                process = await asyncio.create_subprocess_exec(
-                    sys.executable, temp_file_path,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                stdout_chunks = []
+                stderr_chunks = []
+                update_queue = asyncio.Queue()
+                loop = asyncio.get_running_loop()
+
+                process = subprocess.Popen(
+                    [sys.executable, temp_file_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    bufsize=1,
+                    encoding='utf-8',
+                    errors='replace'
                 )
 
-                stdout_chunks = []
-                async def read_stream(stream, status_prefix):
-                    while True:
-                        line = await stream.readline()
-                        if not line:
-                            break
-                        line_str = line.decode('utf-8', errors='replace').rstrip()
-                        if line_str:
-                            if status_prefix == "stdout":
-                                stdout_chunks.append(line_str)
-                            # Yielding info for every line to keep connection alive
-                            # We check if it's a JSON line at the end, but intermediate lines are useful logs
-                            yield {"status": "info", "message": line_str}
-
-                # Create tasks to read stdout and stderr concurrently
-                async def consume_stdout():
-                    async for update in read_stream(process.stdout, "stdout"):
-                        yield update
-
-                # For stderr, we just collect it to handle errors later, but we could also stream it
-                stderr_chunks = []
-                async def consume_stderr():
-                    while True:
-                        line = await process.stderr.readline()
-                        if not line:
-                            break
-                        line_str = line.decode('utf-8', errors='replace').rstrip()
-                        if line_str:
-                            stderr_chunks.append(line_str)
-                            yield {"status": "info", "message": f"LOG: {line_str}"}
-
-                # We use a helper to merge these streams for the yield
-                async def merged_streams():
-                    tasks = [
-                        asyncio.create_task(consume_stdout().__anext__()),
-                        asyncio.create_task(consume_stderr().__anext__())
-                    ]
-                    # This is a bit complex for a simple yield. Let's simplify.
-                
-                # Simplified approach: Read stdout and stderr in the main loop or tasks
-                async def stream_output(stream, is_stderr=False):
-                    while True:
-                        line = await stream.readline()
-                        if not line:
-                            break
-                        line_str = line.decode('utf-8', errors='replace').rstrip()
-                        if line_str:
+                def reader_thread(pipe, is_stderr):
+                    try:
+                        for line in iter(pipe.readline, ''):
+                            line_str = line.rstrip()
+                            if not line_str:
+                                continue
                             if is_stderr:
                                 stderr_chunks.append(line_str)
-                                yield {"status": "info", "message": f"[STDERR] {line_str}"}
-                            else:
-                                stdout_chunks.append(line_str)
-                                try:
-                                    # Try to see if it's the final JSON report to avoid double-logging it as info
-                                    json.loads(line_str)
-                                except:
-                                    yield {"status": "info", "message": line_str}
-
-                # Create a queue to merge updates from both streams
-                update_queue = asyncio.Queue()
-
-                async def stream_reader(stream, is_stderr=False):
-                    while True:
-                        line = await stream.readline()
-                        if not line:
-                            break
-                        line_str = line.decode('utf-8', errors='replace').rstrip()
-                        if line_str:
-                            if is_stderr:
-                                stderr_chunks.append(line_str)
-                                await update_queue.put({"status": "info", "message": f"[STDERR] {line_str}"})
+                                loop.call_soon_threadsafe(update_queue.put_nowait, {"status": "info", "message": f"[STDERR] {line_str}"})
                             else:
                                 stdout_chunks.append(line_str)
                                 try:
                                     # Don't log the final JSON report as info
                                     json.loads(line_str)
                                 except:
-                                    await update_queue.put({"status": "info", "message": line_str})
+                                    loop.call_soon_threadsafe(update_queue.put_nowait, {"status": "info", "message": line_str})
+                    finally:
+                        pipe.close()
 
-                # Run both readers concurrently
-                stdout_task = asyncio.create_task(stream_reader(process.stdout, False))
-                stderr_task = asyncio.create_task(stream_reader(process.stderr, True))
+                threading.Thread(target=reader_thread, args=(process.stdout, False), daemon=True).start()
+                threading.Thread(target=reader_thread, args=(process.stderr, True), daemon=True).start()
 
-                # Yield from the queue until both readers are done
-                while not stdout_task.done() or not stderr_task.done() or not update_queue.empty():
-                    # If tasks are done but queue has items, consume them
-                    # If tasks are not done, wait for queue or tasks
+                # Consume updates from the queue while the process is running
+                while process.poll() is None or not update_queue.empty():
                     try:
-                        # Wait for a brief moment to see if something arrives
-                        update = await asyncio.wait_for(update_queue.get(), timeout=0.1)
+                        update = await asyncio.wait_for(update_queue.get(), timeout=0.5)
                         yield update
                     except asyncio.TimeoutError:
-                        # No update yet, just continue the loop to check tasks status
                         continue
-                    except asyncio.CancelledError:
-                        break
+                
+                # Final flush of the queue
+                while not update_queue.empty():
+                    yield update_queue.get_nowait()
 
-                await stdout_task
-                await stderr_task
-
-                return_code = await process.wait()
+                return_code = process.returncode
                 stdout = "\n".join(stdout_chunks)
                 stderr = "\n".join(stderr_chunks)
 

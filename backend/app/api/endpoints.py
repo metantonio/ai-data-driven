@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
+from fastapi.responses import StreamingResponse
+import json
+import os
 from app.services.llm_service import LLMService
 from app.agents.schema_analysis import SchemaAnalysisAgent
 from app.agents.code_adaptor import CodeAdaptationAgent
@@ -97,9 +100,6 @@ class InsightsRequest(BaseModel):
 
 @router.post("/execute-code")
 async def execute_code_endpoint(request: ExecuteRequest):
-    from fastapi.responses import StreamingResponse
-    import json
-
     async def event_generator():
         executor = ExecutorService()
         # Ensure schema_analysis is passed, default to empty dict if None
@@ -109,7 +109,15 @@ async def execute_code_endpoint(request: ExecuteRequest):
         async for update in executor.execute_code(request.code, analysis, llm_service, max_retries=max_retries):
             yield json.dumps(update) + "\n"
 
-    return StreamingResponse(event_generator(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        event_generator(), 
+        media_type="application/x-ndjson",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        }
+    )
 
 @router.post("/generate-insights")
 def generate_insights(request: InsightsRequest):
@@ -128,9 +136,6 @@ class AutomaticEDARequest(BaseModel):
 
 @router.post("/automatic-eda")
 async def automatic_eda_endpoint(request: AutomaticEDARequest):
-    from fastapi.responses import StreamingResponse
-    import json
-
     async def event_generator():
         agent = AutomaticEDAAgent(llm_service)
         async for update in agent.run_analysis(
@@ -141,7 +146,15 @@ async def automatic_eda_endpoint(request: AutomaticEDARequest):
         ):
             yield json.dumps(update) + "\n"
 
-    return StreamingResponse(event_generator(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        event_generator(), 
+        media_type="application/x-ndjson",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        }
+    )
 
 class ChatInsightsRequest(BaseModel):
     query: str

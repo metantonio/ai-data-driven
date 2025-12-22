@@ -1,6 +1,7 @@
 import uvicorn
 import os
 import sys
+import asyncio
 import multiprocessing
 import webbrowser
 import threading
@@ -40,7 +41,9 @@ def start_server():
         reload=False, 
         workers=1,
         log_level="info",
-        use_colors=False
+        use_colors=False,
+        timeout_keep_alive=65,
+        limit_concurrency=100
     )
 
 if __name__ == "__main__":

@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
+import os
+import sys
+
 
 app = FastAPI(title="QLX AI Data Science System", version="0.1.0")
 

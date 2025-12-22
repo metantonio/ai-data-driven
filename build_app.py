@@ -3,9 +3,14 @@ import shutil
 import os
 from pathlib import Path
 
-def run_command(command, cwd=None):
+def run_command(command, cwd=None, env=None):
     print(f"Executing: {command} in {cwd or 'current directory'}")
-    result = subprocess.run(command, shell=True, cwd=cwd)
+    # Merge current env with provided env
+    full_env = os.environ.copy()
+    if env:
+        full_env.update(env)
+    
+    result = subprocess.run(command, shell=True, cwd=cwd, env=full_env)
     if result.returncode != 0:
         print(f"Error executing command: {command}")
         exit(1)
@@ -44,21 +49,10 @@ def build_app():
         "--collect-all fastapi "
         "--collect-all uvicorn "
         "--collect-all pydantic "
-        "--collect-all pandas "
-        "--collect-all numpy "
-        "--collect-all scikit-learn "
         "--collect-all sklearn "
-        "--collect-all matplotlib "
-        "--collect-all seaborn "
-        "--collect-all joblib "
-        "--collect-all statsmodels "
-        "--collect-all mlxtend "
-        "--collect-all ortools "
         "--collect-all sqlalchemy "
-        "--collect-all plotly "
-        "--collect-all shap "
+        "--collect-all statsmodels "
         "--collect-all xgboost "
-        "--collect-all scipy "
         "--collect-all lightgbm "
         "--collect-all imblearn "
         "--add-data \"static;static\" "

@@ -80,33 +80,50 @@ export const executeCodeStream = async (code: string, schemaAnalysis: any, onUpd
     }
 
     if (!response.body) return;
-
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
 
-        // Process all complete lines
-        for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            if (line) {
-                try {
-                    const data = JSON.parse(line);
-                    onUpdate(data);
-                } catch (e) {
-                    console.error("Error parsing stream line:", line, e);
+            // Process all complete lines
+            for (let i = 0; i < lines.length - 1; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    try {
+                        const data = JSON.parse(line);
+                        onUpdate(data);
+                    } catch (e) {
+                        console.error("Error parsing stream line:", line, e);
+                    }
                 }
             }
+
+            // Keep the last partial line in buffer
+            buffer = lines[lines.length - 1];
         }
 
-        // Keep the last partial line in buffer
-        buffer = lines[lines.length - 1];
+        // Final flush of remaining buffer
+        if (buffer.trim()) {
+            try {
+                const data = JSON.parse(buffer.trim());
+                onUpdate(data);
+            } catch (e) {
+                // Ignore final parse error if it's just incomplete data
+            }
+        }
+    } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        console.error("Stream reading error:", error);
+        throw error;
+    } finally {
+        reader.releaseLock();
     }
 };
 
@@ -152,30 +169,44 @@ export const runAutomaticEDAStream = async (
     }
 
     if (!response.body) return;
-
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
 
-        for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            if (line) {
-                try {
-                    const data = JSON.parse(line);
-                    onUpdate(data);
-                } catch (e) {
-                    console.error("Error parsing stream line:", line, e);
+            for (let i = 0; i < lines.length - 1; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    try {
+                        const data = JSON.parse(line);
+                        onUpdate(data);
+                    } catch (e) {
+                        console.error("Error parsing stream line:", line, e);
+                    }
                 }
             }
+            buffer = lines[lines.length - 1];
         }
-        buffer = lines[lines.length - 1];
+
+        if (buffer.trim()) {
+            try {
+                const data = JSON.parse(buffer.trim());
+                onUpdate(data);
+            } catch (e) { }
+        }
+    } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        console.error("Stream reading error (EDA):", error);
+        throw error;
+    } finally {
+        reader.releaseLock();
     }
 };
 export const getSettings = async () => {
