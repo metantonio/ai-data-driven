@@ -10,7 +10,15 @@ def run_command(command, cwd=None, env=None):
     if env:
         full_env.update(env)
     
-    result = subprocess.run(command, shell=True, cwd=cwd, env=full_env)
+    # Use stdin=subprocess.DEVNULL to prevent PyInstaller sub-processes from 
+    # trying to open the console input buffer on Windows, which causes crashes.
+    result = subprocess.run(
+        command, 
+        shell=True, 
+        cwd=cwd, 
+        env=full_env, 
+        stdin=subprocess.DEVNULL
+    )
     if result.returncode != 0:
         print(f"Error executing command: {command}")
         exit(1)
@@ -51,7 +59,6 @@ def build_app():
         "--collect-all pydantic "
         "--collect-all pandas "
         "--collect-all numpy "
-        "--collect-all scikit-learn "
         "--collect-all sklearn "
         "--collect-all matplotlib "
         "--collect-all seaborn "
@@ -73,6 +80,10 @@ def build_app():
         "--name \"QLX-AI-Data-Science-App\" "
         "server.py"
     )
+    
+    # Critical Fix for PyInstaller crash on Windows: Disable isolated python analysis
+    # and ensure it's in the environment for all subsequent calls.
+    os.environ["PYINSTALLER_ISOLATED_PYTHON"] = "0"
     run_command(pyinstaller_cmd, cwd=str(backend_dir))
 
     print("\n--- Success! ---")
