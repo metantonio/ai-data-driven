@@ -40,18 +40,22 @@ export default function Settings() {
     };
 
     const handleTriggerUpdate = async () => {
-        if (!updateResult?.download_url) return;
+        if (!updateResult?.download_url) {
+            setMessage({ type: 'error', text: "No download URL available for this release." });
+            return;
+        }
 
         setIsUpdating(true);
         try {
-            // Find the first .exe asset if available, otherwise use the release page URL
-            // (Note: The backend trigger_update will fail if it's not a direct file link, 
-            // but for this implementation we assume the user provides a valid download URL)
-            const exeAsset = updateResult?.download_url; // Simplified
+            const downloadUrl = updateResult.download_url;
 
-            const res = await triggerUpdate(exeAsset);
+            // Basic check to see if it's likely a file link and not just the release page
+            if (downloadUrl.includes('/releases/tag/')) {
+                console.warn("Download URL appears to be a release page, not a direct asset link.");
+            }
+
+            const res = await triggerUpdate(downloadUrl);
             setMessage({ type: 'success', text: res.message });
-            // The app will shut down shortly
         } catch (err: any) {
             setMessage({ type: 'error', text: err.response?.data?.detail || "Update failed." });
             setIsUpdating(false);

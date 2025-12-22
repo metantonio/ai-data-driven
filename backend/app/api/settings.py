@@ -76,13 +76,35 @@ def check_updates():
         
         latest_version = data.get("tag_name", "").replace("v", "")
         
+        # Proper version comparison
+        def is_newer(v_latest, v_current):
+            try:
+                l_parts = [int(p) for p in v_latest.split('.')]
+                c_parts = [int(p) for p in v_current.split('.')]
+                # Pad with zeros if different lengths
+                max_len = max(len(l_parts), len(c_parts))
+                l_parts += [0] * (max_len - len(l_parts))
+                c_parts += [0] * (max_len - len(c_parts))
+                return l_parts > c_parts
+            except:
+                return v_latest > v_current
+
+        assets = data.get("assets", [])
+        exe_download_url = data.get("html_url", "") # Fallback to release page
+        
+        # Find the actual .exe binary in assets
+        for asset in assets:
+            if asset.get("name", "").lower().endswith(".exe"):
+                exe_download_url = asset.get("browser_download_url", exe_download_url)
+                break
+
         return {
             "current_version": VERSION,
             "latest_version": latest_version,
-            "has_update": latest_version > VERSION,
+            "has_update": is_newer(latest_version, VERSION),
             "release_notes": data.get("body", ""),
-            "download_url": data.get("html_url", ""),
-            "assets": data.get("assets", [])
+            "download_url": exe_download_url,
+            "assets": assets
         }
     except Exception as e:
         print(f"Error checking updates: {e}")
@@ -106,15 +128,25 @@ def trigger_update(download_url: str):
         # Note: In a real scenario, we'd find the .exe asset in the request data.
         # For this demo, let's assume the user already provided the asset URL.
         
+        print(f"Starting download from: {download_url}")
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
         
         exe_path = sys.executable
         new_exe_path = exe_path + ".new"
         
+        print(f"Downloading update to: {new_exe_path}")
+        total_bytes = 0
         with open(new_exe_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+                if chunk:
+                    f.write(chunk)
+                    total_bytes += len(chunk)
+        
+        print(f"Update downloaded. Total size: {total_bytes} bytes")
+        
+        if total_bytes < 100000: # Sanity check: less than 100KB is likely an error or HTML page
+             raise Exception(f"Downloaded file is suspiciously small ({total_bytes} bytes). Check if the download URL is correct.")
                 
         # 2. Create the batch script for replacement
         bat_content = f"""

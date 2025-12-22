@@ -95,7 +95,7 @@ def main():
         best_name = ""
         
         for name, (model, params) in models.items():
-            print(f"Optimizing {name}...")
+            print(f"Optimizing {name}...", flush=True)
             search = RandomizedSearchCV(model, params, n_iter=5, cv=3, random_state=42, n_jobs=-1, verbose=1)
             search.fit(X_train, y_train)
             if search.best_score_ > best_score:

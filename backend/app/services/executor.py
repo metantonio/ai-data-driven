@@ -103,47 +103,47 @@ class ExecutorService:
                                 except:
                                     yield {"status": "info", "message": line_str}
 
-                # Create an async generator that merges both streams
-                async def get_all_updates():
-                    stdout_gen = stream_output(process.stdout, False)
-                    stderr_gen = stream_output(process.stderr, True)
-                    
-                    next_stdout = asyncio.ensure_future(stdout_gen.__anext__())
-                    next_stderr = asyncio.ensure_future(stderr_gen.__anext__())
-                    
-                    while True:
-                        done, pending = await asyncio.wait(
-                            [next_stdout, next_stderr],
-                            return_when=asyncio.FIRST_COMPLETED
-                        )
-                        
-                        if next_stdout in done:
-                            try:
-                                yield await next_stdout
-                                next_stdout = asyncio.ensure_future(stdout_gen.__anext__())
-                            except StopAsyncIteration:
-                                next_stdout = None
-                                
-                        if next_stderr in done:
-                            try:
-                                yield await next_stderr
-                                next_stderr = asyncio.ensure_future(stderr_gen.__anext__())
-                            except StopAsyncIteration:
-                                next_stderr = None
-                                
-                        if next_stdout is None and next_stderr is None:
-                            break
-                        
-                        # If one is None, we just wait for the other
-                        if next_stdout is None:
-                            await asyncio.wait([next_stderr])
-                            continue
-                        if next_stderr is None:
-                            await asyncio.wait([next_stdout])
-                            continue
+                # Create a queue to merge updates from both streams
+                update_queue = asyncio.Queue()
 
-                async for update in get_all_updates():
-                    yield update
+                async def stream_reader(stream, is_stderr=False):
+                    while True:
+                        line = await stream.readline()
+                        if not line:
+                            break
+                        line_str = line.decode('utf-8', errors='replace').rstrip()
+                        if line_str:
+                            if is_stderr:
+                                stderr_chunks.append(line_str)
+                                await update_queue.put({"status": "info", "message": f"[STDERR] {line_str}"})
+                            else:
+                                stdout_chunks.append(line_str)
+                                try:
+                                    # Don't log the final JSON report as info
+                                    json.loads(line_str)
+                                except:
+                                    await update_queue.put({"status": "info", "message": line_str})
+
+                # Run both readers concurrently
+                stdout_task = asyncio.create_task(stream_reader(process.stdout, False))
+                stderr_task = asyncio.create_task(stream_reader(process.stderr, True))
+
+                # Yield from the queue until both readers are done
+                while not stdout_task.done() or not stderr_task.done() or not update_queue.empty():
+                    # If tasks are done but queue has items, consume them
+                    # If tasks are not done, wait for queue or tasks
+                    try:
+                        # Wait for a brief moment to see if something arrives
+                        update = await asyncio.wait_for(update_queue.get(), timeout=0.1)
+                        yield update
+                    except asyncio.TimeoutError:
+                        # No update yet, just continue the loop to check tasks status
+                        continue
+                    except asyncio.CancelledError:
+                        break
+
+                await stdout_task
+                await stderr_task
 
                 return_code = await process.wait()
                 stdout = "\n".join(stdout_chunks)

@@ -44,7 +44,7 @@ def main():
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         
         # 4. Train
-        print(f"Training Random Forest Classifier...")
+        print(f"Training Random Forest Classifier...", flush=True)
         model = train_model(X_train, y_train)
         
         # 5. Evaluate
@@ -53,7 +53,7 @@ def main():
         
         # 6. SHAP Explanations
         import shap
-        print("Calculating SHAP values for feature importance... (this may take a moment)")
+        print("Calculating SHAP values for feature importance... (this may take a moment)", flush=True)
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(X_test)
         
