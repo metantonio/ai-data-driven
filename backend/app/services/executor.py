@@ -5,15 +5,26 @@ import json
 import sys
 import asyncio
 from app.agents.error_analysis import ErrorAnalysisAgent
+from app.agents.code_adaptor import CodeAdaptationAgent
 
 class ExecutorService:
+    async def _run_with_heartbeat(self, func, *args, status="info", message="AI is thinking...", **kwargs):
+        """Runs a blocking function in a thread while yielding heartbeat updates."""
+        task = asyncio.create_task(asyncio.to_thread(func, *args, **kwargs))
+        while not task.done():
+            yield {"status": status, "message": message}
+            try:
+                await asyncio.wait_for(asyncio.shield(task), timeout=5.0)
+            except asyncio.TimeoutError:
+                continue
+        yield await task
+
     async def execute_code(self, code: str, schema_analysis: dict, llm_service, max_retries: int = 2):
         """
         Executes the provided Python code.
         Yields status updates: {"status": "info" | "error" | "success" | "fixing" | "final_error", "message": str, "data": ...}
         """
         try:
-            from app.agents.code_adaptor import CodeAdaptationAgent 
             error_analyzer = ErrorAnalysisAgent(llm_service)
         except Exception as startup_error:
              yield {"status": "final_error", "message": f"Executor startup failed: {str(startup_error)}", "data": {"code": code}}
@@ -165,7 +176,16 @@ class ExecutorService:
                     yield {"status": "info", "message": "Pipeline failed. AI is analyzing the cause...", "data": {"stderr": stderr}}
                     
                     try:
-                        error_summary = error_analyzer.analyze_error(current_code, stderr, schema_analysis)
+                        # Use heartbeat for analysis
+                        async for update in self._run_with_heartbeat(
+                            error_analyzer.analyze_error, current_code, stderr, schema_analysis,
+                            status="info", message="AI is analyzing the error details..."
+                        ):
+                            if isinstance(update, dict) and "status" in update and update["status"] == "info":
+                                yield update
+                            else:
+                                error_summary = update
+                        
                         yield {"status": "error", "message": error_summary, "data": {"stderr": stderr, "is_ai_summary": True}}
                     except Exception as e:
                         error_summary = f"Pipeline execution failed. Error: {stderr[-500:]}"
@@ -183,7 +203,16 @@ class ExecutorService:
                         
                         try:
                             adapter = CodeAdaptationAgent(llm_service)
-                            current_code = adapter.fix_code(current_code, stderr, schema_analysis, error_summary, error_history)
+                            # Use heartbeat for fixing
+                            async for update in self._run_with_heartbeat(
+                                adapter.fix_code, current_code, stderr, schema_analysis, error_summary, error_history,
+                                status="fixing", message="AI is generating a fixed version of the code..."
+                            ):
+                                if isinstance(update, dict) and "status" in update and update["status"] == "fixing":
+                                    yield update
+                                else:
+                                    current_code = update
+                                    
                             yield {"status": "info", "message": "Fix applied. Retrying...", "data": {"code": current_code}}
                         except Exception as fix_error:
                              yield {"status": "error", "message": f"Auto-fixer failed: {str(fix_error)}. Retrying with original code...", "data": None}
