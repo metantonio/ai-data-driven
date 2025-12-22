@@ -133,10 +133,17 @@ class ExecutorService:
                             if isinstance(update, dict) and "status" in update and update["status"] == "info":
                                 yield update
                             else:
-                                error_summary = update
+                                analysis_result = update
+                        
+                        error_summary = analysis_result.get("summary", "Unknown error")
+                        fix_type = analysis_result.get("fix_type", "FULL_REPAIR")
+                        quick_fix_details = analysis_result.get("quick_fix_details")
+                        
                         yield {"status": "error", "message": error_summary, "data": {"stderr": stderr, "is_ai_summary": True}}
                     except Exception as e:
                         error_summary = f"Pipeline execution failed. Raw error: {stderr[-500:]}"
+                        fix_type = "FULL_REPAIR"
+                        quick_fix_details = None
                         yield {"status": "error", "message": error_summary, "data": {"stderr": stderr}}
 
                     # Focus on the end of the error for the summary/history
@@ -150,7 +157,24 @@ class ExecutorService:
                     })
 
                     if attempt <= max_retries:
-                        yield {"status": "fixing", "message": "AI is applying an automated fix..."}
+                        if fix_type == "QUICK_FIX" and quick_fix_details:
+                            yield {"status": "fixing", "message": f"Applying Quick Fix: {error_summary}"}
+                            
+                            # Apply the specific quick fix
+                            if quick_fix_details.get("action") == "add_import":
+                                lib = quick_fix_details.get("library", "")
+                                import_line = f"import {lib}\n"
+                                # Prepend import if not already there
+                                if import_line not in current_code:
+                                    current_code = import_line + current_code
+                                    yield {"status": "info", "message": f"Added missing import: '{lib}'. Retrying...", "data": {"code": current_code}}
+                                    continue # Skip to next attempt loop
+                            
+                            # Fallback if quick fix action unknown or failed
+                            yield {"status": "info", "message": "Quick fix failed. Falling back to full repair..."}
+
+                        # If not a quick fix or quick fix failed, do full repair
+                        yield {"status": "fixing", "message": "AI is applying an automated fix (Full Repair)..."}
                         
                         try:
                             adapter = CodeAdaptationAgent(llm_service)

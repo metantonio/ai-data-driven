@@ -42,6 +42,20 @@ def build_app():
 
     print("--- 3. Running PyInstaller ---")
     
+    # Extract version from backend/app/version.py
+    version = "unknown"
+    version_file = backend_dir / "app" / "version.py"
+    if version_file.exists():
+        with open(version_file, "r") as f:
+            content = f.read()
+            import re
+            match = re.search(r'VERSION\s*=\s*["\']([^"\']+)["\']', content)
+            if match:
+                version = match.group(1)
+    
+    app_name = f"QLX-AI-Data-Science-App-v{version}"
+    print(f"Building version: {version} -> {app_name}")
+
     # Ensure we use the virtual environment binaries if they exist
     venv_python = backend_dir / "venv" / "Scripts" / "python.exe"
     pyinstaller_base = "python -m PyInstaller"
@@ -77,7 +91,7 @@ def build_app():
         "--add-data \"app;app\" "
         "--add-data \"../ml_template;ml_template\" "
         "--add-data \"../pipeline.py;.\" "
-        "--name \"QLX-AI-Data-Science-App\" "
+        f"--name \"{app_name}\" "
         "server.py"
     )
     
@@ -87,7 +101,7 @@ def build_app():
     run_command(pyinstaller_cmd, cwd=str(backend_dir))
 
     print("\n--- Success! ---")
-    print(f"Your executable can be found in: {backend_dir / 'dist' / 'QLX-AI-Data-Science-App.exe'}")
+    print(f"Your executable can be found in: {backend_dir / 'dist' / app_name + '.exe'}")
 
 if __name__ == "__main__":
     build_app()
